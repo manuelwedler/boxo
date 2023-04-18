@@ -7,15 +7,14 @@ import (
 	cid "github.com/ipfs/go-cid"
 	exchange "github.com/ipfs/go-ipfs-exchange-interface"
 	logging "github.com/ipfs/go-log"
-	peer "github.com/libp2p/go-libp2p-core/peer"
+	peer "github.com/libp2p/go-libp2p/core/peer"
 )
 
 var log = logging.Logger("relaysession")
 
 type RelayRegistry struct {
-	r      map[cid.Cid]map[peer.ID]int32
-	Degree int32
-	lk     sync.RWMutex
+	r  map[cid.Cid]map[peer.ID]bool
+	lk sync.RWMutex
 }
 
 type RelaySession struct {
@@ -26,12 +25,11 @@ type RelaySession struct {
 	// PeerBlockRegistry
 }
 
-func NewRelaySession(degree int32) *RelaySession {
+func NewRelaySession() *RelaySession {
 	return &RelaySession{
 		Session: nil,
 		Registry: &RelayRegistry{
-			r:      make(map[cid.Cid]map[peer.ID]int32, 0),
-			Degree: degree,
+			r: make(map[cid.Cid]map[peer.ID]bool, 0),
 		},
 	}
 }
@@ -59,63 +57,43 @@ func (rs *RelaySession) UpdateSession(ctx context.Context, kt *keyTracker) {
 	defer rs.Registry.lk.Unlock()
 	sessionBlks := make([]cid.Cid, 0)
 
-	for _, t := range kt.T {
-		if rs.Registry.r[t.Key] == nil {
+	for _, c := range kt.T {
+		if rs.Registry.r[c] == nil {
 			// We need to start a new search because the CID is not active.
-			sessionBlks = append(sessionBlks, t.Key)
+			sessionBlks = append(sessionBlks, c)
 			// Add to the registry
-			rs.Registry.r[t.Key] = make(map[peer.ID]int32, 0)
+			rs.Registry.r[c] = make(map[peer.ID]bool, 1)
 		}
-		// Update with the latest TTL (this could be changed to perform
-		// smarter logics over TTL).
-		rs.Registry.r[t.Key][kt.Peer] = t.TTL
+		rs.Registry.r[c][kt.Peer] = true
 	}
 	log.Debugf("Started new block search for keys: %v", sessionBlks)
-	rs.Session.GetBlocks(ctx, sessionBlks)
+	rs.Session.GetBlocks(ctx, sessionBlks) // TODO GetBlocks should get called for every request to have a random walk.
 }
 
 // InterestedPeers returns peer looking for a cid.
-func (rs *RelaySession) InterestedPeers(c cid.Cid) map[peer.ID]int32 {
+func (rs *RelaySession) InterestedPeers(c cid.Cid) map[peer.ID]bool {
 	rs.Registry.lk.RLock()
 	defer rs.Registry.lk.RUnlock()
 	// Create brand new map to avoid data races.
-	res := make(map[peer.ID]int32)
+	res := make(map[peer.ID]bool)
 	for k, v := range rs.Registry.r[c] {
 		res[k] = v
 	}
 	return res
 }
 
-// GetTTL returns peer looking for a cid.
-func (rs *RelayRegistry) GetTTL(c cid.Cid) int32 {
-	rs.lk.RLock()
-	defer rs.lk.RUnlock()
-	// TODO: We return the TTL for any of the peers requesting it. We could
-	// perform other logic to select the right TTL to send here.
-	for _, ttl := range rs.r[c] {
-		return ttl
-	}
-
-	return 0
-}
-
-// func (rs *RelaySession)
-type itemTrack struct {
-	Key cid.Cid
-	TTL int32
-}
 type keyTracker struct {
 	Peer peer.ID
-	T    []*itemTrack
+	T    []cid.Cid
 }
 
-func (kt *keyTracker) UpdateTracker(c cid.Cid, ttl int32) {
-	kt.T = append(kt.T, &itemTrack{c, ttl})
+func (kt *keyTracker) UpdateTracker(c cid.Cid) {
+	kt.T = append(kt.T, c)
 }
 
 func NewKeyTracker(p peer.ID) *keyTracker {
 	return &keyTracker{
-		T:    make([]*itemTrack, 0),
+		T:    make([]cid.Cid, 0),
 		Peer: p,
 	}
 }
