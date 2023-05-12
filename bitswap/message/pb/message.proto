@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package bitswap.message.v1.pb;
 
-import "gogoproto/gogo.proto";
+import "github.com/gogo/protobuf@v1.3.2/gogoproto/gogo.proto";
 
 option go_package = "bitswap_message_pb";
 
