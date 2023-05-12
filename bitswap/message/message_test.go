@@ -243,13 +243,15 @@ func TestBlockPresences(t *testing.T) {
 
 func TestAddWantlistEntry(t *testing.T) {
 	b := blocks.NewBlock([]byte("foo"))
+	c := blocks.NewBlock([]byte("baz"))
 	msg := New(true)
 
 	msg.AddEntry(b.Cid(), 1, pb.Message_Wantlist_Have, false)
 	msg.AddEntry(b.Cid(), 2, pb.Message_Wantlist_Block, true)
+	msg.AddForwardEntry(c.Cid(), 2)
 	entries := msg.Wantlist()
-	if len(entries) != 1 {
-		t.Fatal("Duplicate in BitSwapMessage")
+	if len(entries) != 2 {
+		t.Fatal("Duplicate in BitSwapMessage", len(entries))
 	}
 	e := entries[0]
 	if e.WantType != pb.Message_Wantlist_Block {
@@ -260,6 +262,16 @@ func TestAddWantlistEntry(t *testing.T) {
 	}
 	if e.Priority != 1 {
 		t.Fatal("priority should only be overridden if wants are of same type")
+	}
+	f := entries[0]
+	if f.WantType != pb.Message_Wantlist_Forward {
+		t.Fatal("wrong message type")
+	}
+	if f.SendDontHave != false {
+		t.Fatal("SendDontHave should not be included in forwarded-haves")
+	}
+	if f.Priority != 2 {
+		t.Fatal("wrong priority")
 	}
 
 	msg.AddEntry(b.Cid(), 2, pb.Message_Wantlist_Block, true)

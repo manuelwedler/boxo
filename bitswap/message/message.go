@@ -11,6 +11,7 @@ import (
 	blocks "github.com/ipfs/go-block-format"
 	cid "github.com/ipfs/go-cid"
 	pool "github.com/libp2p/go-buffer-pool"
+	peer "github.com/libp2p/go-libp2p/core/peer"
 	msgio "github.com/libp2p/go-msgio"
 
 	u "github.com/ipfs/boxo/util"
@@ -24,6 +25,8 @@ type BitSwapMessage interface {
 	// the sender.
 	Wantlist() []Entry
 
+	Forwardlist() []Entry
+
 	// Blocks returns a slice of unique blocks.
 	Blocks() []blocks.Block
 	// BlockPresences returns the list of HAVE / DONT_HAVE in the message
@@ -32,6 +35,8 @@ type BitSwapMessage interface {
 	Haves() []cid.Cid
 	// DontHaves returns the Cids for each DONT_HAVE
 	DontHaves() []cid.Cid
+	// RelayedHaves returns a list of peers that responded with a HAVE per Cid
+	RelayedHaves() map[cid.Cid][]peer.ID
 	// PendingBytes returns the number of outstanding bytes of data that the
 	// engine has yet to send to the client (because they didn't fit in this
 	// message)
@@ -44,9 +49,18 @@ type BitSwapMessage interface {
 	// Returns the size of the CANCEL entry in the protobuf
 	Cancel(key cid.Cid) int
 
+	// AddForwardEntry adds an entry to the Wantlist that should be proxied. Only supports HAVEs.
+	AddForwardEntry(key cid.Cid, priority int32) int
+
+	// CancelForward adds a CANCEL for a forwarded request given by the CID.
+	CancelForward(k cid.Cid) int
+
 	// Remove removes any entries for the given CID. Useful when the want
 	// status for the CID changes when preparing a message.
 	Remove(key cid.Cid)
+
+	// Remove removes any forward entries for the given CID.
+	RemoveForward(key cid.Cid)
 
 	// Empty indicates whether the message has any information
 	Empty() bool
@@ -64,6 +78,8 @@ type BitSwapMessage interface {
 	AddHave(cid.Cid)
 	// AddDontHave adds a DONT_HAVE for the given Cid to the message
 	AddDontHave(cid.Cid)
+	// AddRelayedHave adds a list of peers that have responded with a HAVE for the given Cid
+	AddRelayedHave(cid.Cid, []peer.ID)
 	// SetPendingBytes sets the number of bytes of data that are yet to be sent
 	// to the client (because they didn't fit in this message)
 	SetPendingBytes(int32)
@@ -133,7 +149,7 @@ func maxEntrySize() int {
 		Entry: wantlist.Entry{
 			Cid:      c,
 			Priority: maxInt32,
-			WantType: pb.Message_Wantlist_Have,
+			WantType: pb.Message_Wantlist_Forward,
 		},
 		SendDontHave: true, // true takes up more space than false
 		Cancel:       true,
@@ -142,11 +158,13 @@ func maxEntrySize() int {
 }
 
 type impl struct {
-	full           bool
-	wantlist       map[cid.Cid]*Entry
-	blocks         map[cid.Cid]blocks.Block
-	blockPresences map[cid.Cid]pb.Message_BlockPresenceType
-	pendingBytes   int32
+	full                bool
+	wantlist            map[cid.Cid]*Entry
+	forwardlist         map[cid.Cid]*Entry
+	blocks              map[cid.Cid]blocks.Block
+	blockPresences      map[cid.Cid]pb.Message_BlockPresenceType
+	blockPresencesPeers map[cid.Cid][]peer.ID
+	pendingBytes        int32
 }
 
 // New returns a new, empty bitswap message
@@ -156,10 +174,12 @@ func New(full bool) BitSwapMessage {
 
 func newMsg(full bool) *impl {
 	return &impl{
-		full:           full,
-		wantlist:       make(map[cid.Cid]*Entry),
-		blocks:         make(map[cid.Cid]blocks.Block),
-		blockPresences: make(map[cid.Cid]pb.Message_BlockPresenceType),
+		full:                full,
+		wantlist:            make(map[cid.Cid]*Entry),
+		forwardlist:         make(map[cid.Cid]*Entry),
+		blocks:              make(map[cid.Cid]blocks.Block),
+		blockPresences:      make(map[cid.Cid]pb.Message_BlockPresenceType),
+		blockPresencesPeers: make(map[cid.Cid][]peer.ID),
 	}
 }
 
@@ -169,11 +189,18 @@ func (m *impl) Clone() BitSwapMessage {
 	for k := range m.wantlist {
 		msg.wantlist[k] = m.wantlist[k]
 	}
+	for k := range m.forwardlist {
+		msg.forwardlist[k] = m.forwardlist[k]
+	}
 	for k := range m.blocks {
 		msg.blocks[k] = m.blocks[k]
 	}
 	for k := range m.blockPresences {
 		msg.blockPresences[k] = m.blockPresences[k]
+	}
+	for k := range m.blockPresencesPeers {
+		msg.blockPresencesPeers[k] = make([]peer.ID, 0, len(m.blockPresencesPeers[k]))
+		msg.blockPresencesPeers[k] = append(msg.blockPresencesPeers[k], m.blockPresencesPeers[k]...)
 	}
 	msg.pendingBytes = m.pendingBytes
 	return msg
@@ -185,11 +212,17 @@ func (m *impl) Reset(full bool) {
 	for k := range m.wantlist {
 		delete(m.wantlist, k)
 	}
+	for k := range m.forwardlist {
+		delete(m.forwardlist, k)
+	}
 	for k := range m.blocks {
 		delete(m.blocks, k)
 	}
 	for k := range m.blockPresences {
 		delete(m.blockPresences, k)
+	}
+	for k := range m.blockPresencesPeers {
+		delete(m.blockPresencesPeers, k)
 	}
 	m.pendingBytes = 0
 }
@@ -236,7 +269,18 @@ func newMessageFromProto(pbm pb.Message) (BitSwapMessage, error) {
 		if !bi.Cid.Cid.Defined() {
 			return nil, errCidMissing
 		}
-		m.AddBlockPresence(bi.Cid.Cid, bi.Type)
+		if bi.GetType() == pb.Message_ForwardHave {
+			peers := make([]peer.ID, 0, len(bi.PeerIds))
+			for _, bs := range bi.PeerIds {
+				p, err := peer.IDFromBytes(bs)
+				if err == nil {
+					peers = append(peers, p)
+				}
+			}
+			m.AddRelayedHave(bi.Cid.Cid, peers)
+		} else {
+			m.AddBlockPresence(bi.Cid.Cid, bi.Type)
+		}
 	}
 
 	m.pendingBytes = pbm.PendingBytes
@@ -249,12 +293,20 @@ func (m *impl) Full() bool {
 }
 
 func (m *impl) Empty() bool {
-	return len(m.blocks) == 0 && len(m.wantlist) == 0 && len(m.blockPresences) == 0
+	return len(m.blocks) == 0 && len(m.wantlist) == 0 && len(m.blockPresences) == 0 && len(m.forwardlist) == 0 && len(m.blockPresencesPeers) == 0
 }
 
 func (m *impl) Wantlist() []Entry {
 	out := make([]Entry, 0, len(m.wantlist))
 	for _, e := range m.wantlist {
+		out = append(out, *e)
+	}
+	return out
+}
+
+func (m *impl) Forwardlist() []Entry {
+	out := make([]Entry, 0, len(m.forwardlist))
+	for _, e := range m.forwardlist {
 		out = append(out, *e)
 	}
 	return out
@@ -284,6 +336,17 @@ func (m *impl) DontHaves() []cid.Cid {
 	return m.getBlockPresenceByType(pb.Message_DontHave)
 }
 
+func (m *impl) RelayedHaves() map[cid.Cid][]peer.ID {
+	cids := make(map[cid.Cid][]peer.ID)
+	for c, ps := range m.blockPresencesPeers {
+		if cids[c] == nil {
+			cids[c] = make([]peer.ID, 0, len(m.blockPresencesPeers[c]))
+		}
+		cids[c] = append(cids[c], ps...)
+	}
+	return cids
+}
+
 func (m *impl) getBlockPresenceByType(t pb.Message_BlockPresenceType) []cid.Cid {
 	cids := make([]cid.Cid, 0, len(m.blockPresences))
 	for c, bpt := range m.blockPresences {
@@ -304,6 +367,10 @@ func (m *impl) SetPendingBytes(pendingBytes int32) {
 
 func (m *impl) Remove(k cid.Cid) {
 	delete(m.wantlist, k)
+}
+
+func (m *impl) RemoveForward(k cid.Cid) {
+	delete(m.forwardlist, k)
 }
 
 func (m *impl) Cancel(k cid.Cid) int {
@@ -351,6 +418,36 @@ func (m *impl) addEntry(c cid.Cid, priority int32, cancel bool, wantType pb.Mess
 	return e.Size()
 }
 
+func (m *impl) CancelForward(k cid.Cid) int {
+	return m.addForwardEntry(k, 0, true)
+}
+
+func (m *impl) AddForwardEntry(k cid.Cid, priority int32) int {
+	return m.addForwardEntry(k, priority, false)
+}
+
+func (m *impl) addForwardEntry(c cid.Cid, priority int32, cancel bool) int {
+	e, exists := m.forwardlist[c]
+	if exists && e.Cancel != cancel {
+		e.Cancel = cancel
+		m.forwardlist[c] = e
+		return 0
+	}
+
+	e = &Entry{
+		Entry: wantlist.Entry{
+			Cid:      c,
+			Priority: priority,
+			WantType: pb.Message_Wantlist_Forward,
+		},
+		SendDontHave: false,
+		Cancel:       cancel,
+	}
+	m.forwardlist[c] = e
+
+	return e.Size()
+}
+
 func (m *impl) AddBlock(b blocks.Block) {
 	delete(m.blockPresences, b.Cid())
 	m.blocks[b.Cid()] = b
@@ -371,15 +468,41 @@ func (m *impl) AddDontHave(c cid.Cid) {
 	m.AddBlockPresence(c, pb.Message_DontHave)
 }
 
+func (m *impl) AddRelayedHave(c cid.Cid, ps []peer.ID) {
+	m.blockPresences[c] = pb.Message_ForwardHave
+	if m.blockPresencesPeers[c] == nil {
+		m.blockPresencesPeers[c] = make([]peer.ID, 0, len(ps))
+	}
+	m.blockPresencesPeers[c] = append(m.blockPresencesPeers[c], ps...)
+}
+
 func (m *impl) Size() int {
 	size := 0
 	for _, block := range m.blocks {
 		size += len(block.RawData())
 	}
 	for c := range m.blockPresences {
-		size += BlockPresenceSize(c)
+		peers := make([][]byte, 0, len(m.blockPresencesPeers[c]))
+		ps, exists := m.blockPresencesPeers[c]
+		if exists {
+			for _, p := range ps {
+				mp, err := p.MarshalBinary()
+				if err == nil {
+					peers = append(peers, mp)
+				}
+			}
+		}
+		presence := &pb.Message_BlockPresence{
+			Cid:     pb.Cid{Cid: c},
+			Type:    pb.Message_Have,
+			PeerIds: peers,
+		}
+		size += presence.Size()
 	}
 	for _, e := range m.wantlist {
+		size += e.Size()
+	}
+	for _, e := range m.forwardlist {
 		size += e.Size()
 	}
 
@@ -451,9 +574,20 @@ func (m *impl) ToProtoV1() *pb.Message {
 
 	pbm.BlockPresences = make([]pb.Message_BlockPresence, 0, len(m.blockPresences))
 	for c, t := range m.blockPresences {
+		peers := make([][]byte, 0, len(m.blockPresencesPeers[c]))
+		ps, exists := m.blockPresencesPeers[c]
+		if exists {
+			for _, p := range ps {
+				mp, err := p.Marshal()
+				if err == nil {
+					peers = append(peers, mp)
+				}
+			}
+		}
 		pbm.BlockPresences = append(pbm.BlockPresences, pb.Message_BlockPresence{
-			Cid:  pb.Cid{Cid: c},
-			Type: t,
+			Cid:     pb.Cid{Cid: c},
+			Type:    t,
+			PeerIds: peers,
 		})
 	}
 
@@ -494,7 +628,8 @@ func (m *impl) Loggable() map[string]interface{} {
 		blocks = append(blocks, v.Cid().String())
 	}
 	return map[string]interface{}{
-		"blocks": blocks,
-		"wants":  m.Wantlist(),
+		"blocks":   blocks,
+		"wants":    m.Wantlist(),
+		"forwards": m.Forwardlist(),
 	}
 }

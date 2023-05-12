@@ -12,6 +12,7 @@ message Message {
     enum WantType {
       Block = 0;
       Have = 1;
+      Forward = 2;
     }
 
     message Entry {
@@ -34,10 +35,12 @@ message Message {
   enum BlockPresenceType {
     Have = 0;
     DontHave = 1;
+    ForwardHave = 2;
   }
   message BlockPresence {
     bytes cid = 1 [(gogoproto.customtype) = "Cid", (gogoproto.nullable) = false];
     BlockPresenceType type = 2;
+    repeated bytes peerIds = 3;
   }
 
   Wantlist wantlist = 1 [(gogoproto.nullable) = false];
