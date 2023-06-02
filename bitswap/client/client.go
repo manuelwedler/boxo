@@ -28,6 +28,7 @@ import (
 	bsmsg "github.com/ipfs/boxo/bitswap/message"
 	bmetrics "github.com/ipfs/boxo/bitswap/metrics"
 	bsnet "github.com/ipfs/boxo/bitswap/network"
+	bsrm "github.com/ipfs/boxo/bitswap/relaymanager"
 	"github.com/ipfs/boxo/bitswap/tracer"
 	blockstore "github.com/ipfs/boxo/blockstore"
 	exchange "github.com/ipfs/boxo/exchange"
@@ -89,7 +90,7 @@ type BlockReceivedNotifier interface {
 }
 
 // New initializes a Bitswap client that runs until client.Close is called.
-func New(parent context.Context, network bsnet.BitSwapNetwork, bstore blockstore.Blockstore, options ...Option) *Client {
+func New(parent context.Context, network bsnet.BitSwapNetwork, bstore blockstore.Blockstore, rm *bsrm.RelayManager, options ...Option) *Client {
 	// important to use provided parent context (since it may include important
 	// loggable data). It's probably not a good idea to allow bitswap to be
 	// coupled to the concerns of the ipfs daemon in this way.
@@ -143,7 +144,10 @@ func New(parent context.Context, network bsnet.BitSwapNetwork, bstore blockstore
 	notif := notifications.New()
 	sm = bssm.New(ctx, sessionFactory, sim, sessionPeerManagerFactory, bpm, pm, notif, network.Self())
 
+	rm.Forwarder = pm
+
 	bs = &Client{
+		rm:                         rm,
 		blockstore:                 bstore,
 		network:                    network,
 		process:                    px,
@@ -182,6 +186,8 @@ func New(parent context.Context, network bsnet.BitSwapNetwork, bstore blockstore
 
 // Client instances implement the bitswap protocol.
 type Client struct {
+	rm *bsrm.RelayManager
+
 	pm *bspm.PeerManager
 
 	// the provider query manager manages requests to find providers

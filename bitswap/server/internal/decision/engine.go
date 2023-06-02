@@ -15,6 +15,7 @@ import (
 	bsmsg "github.com/ipfs/boxo/bitswap/message"
 	pb "github.com/ipfs/boxo/bitswap/message/pb"
 	bmetrics "github.com/ipfs/boxo/bitswap/metrics"
+	bsrm "github.com/ipfs/boxo/bitswap/relaymanager"
 	bstore "github.com/ipfs/boxo/blockstore"
 	blocks "github.com/ipfs/go-block-format"
 	"github.com/ipfs/go-cid"
@@ -189,6 +190,9 @@ type Engine struct {
 
 	maxQueuedWantlistEntriesPerPeer uint
 	maxCidSize                      uint
+
+	// RelayManager to manage relay requests.
+	relayManager *bsrm.RelayManager
 }
 
 // TaskInfo represents the details of a request from a peer.
@@ -327,6 +331,7 @@ func NewEngine(
 	bs bstore.Blockstore,
 	peerTagger PeerTagger,
 	self peer.ID,
+	rm *bsrm.RelayManager,
 	opts ...Option,
 ) *Engine {
 	return newEngine(
@@ -335,6 +340,7 @@ func NewEngine(
 		peerTagger,
 		self,
 		maxBlockSizeReplaceHasWithBlock,
+		rm,
 		opts...,
 	)
 }
@@ -345,6 +351,7 @@ func newEngine(
 	peerTagger PeerTagger,
 	self peer.ID,
 	maxReplaceSize int,
+	rm *bsrm.RelayManager,
 	opts ...Option,
 ) *Engine {
 	e := &Engine{
@@ -367,6 +374,7 @@ func newEngine(
 		tagUseful:                       fmt.Sprintf(tagFormat, "useful", uuid.New().String()),
 		maxQueuedWantlistEntriesPerPeer: defaults.MaxQueuedWantlistEntiresPerPeer,
 		maxCidSize:                      defaults.MaximumAllowedCid,
+		relayManager:                    rm,
 	}
 
 	for _, opt := range opts {
@@ -629,6 +637,7 @@ func (e *Engine) Peers() []peer.ID {
 // request queue (this is later popped off by the workerTasks)
 func (e *Engine) MessageReceived(ctx context.Context, p peer.ID, m bsmsg.BitSwapMessage) (mustKillConnection bool) {
 	entries := m.Wantlist()
+	forwards := m.Forwardlist()
 
 	if len(entries) > 0 {
 		log.Debugw("Bitswap engine <- msg", "local", e.self, "from", p, "entryCount", len(entries))
@@ -642,12 +651,22 @@ func (e *Engine) MessageReceived(ctx context.Context, p peer.ID, m bsmsg.BitSwap
 			}
 		}
 	}
+	if len(forwards) > 0 {
+		log.Debugw("Bitswap engine <- msg", "local", e.self, "from", p, "forwardCount", len(forwards))
+		for _, et := range entries {
+			if !et.Cancel {
+				if et.WantType == pb.Message_Wantlist_Forward {
+					log.Debugw("Bitswap engine <- want-forward", "local", e.self, "from", p, "cid", et.Cid)
+				}
+			}
+		}
+	}
 
 	if m.Empty() {
 		log.Infof("received empty message from %s", p)
 	}
 
-	newWorkExists := false
+	newWorkExists := false // TODO / make sure my changes change the flag
 	defer func() {
 		if newWorkExists {
 			e.signalNewWork()
@@ -687,6 +706,7 @@ func (e *Engine) MessageReceived(ctx context.Context, p peer.ID, m bsmsg.BitSwap
 	}
 
 	filteredWants := wants[:0] // shift inplace
+	filteredForwards := forwards[:0]
 
 	for _, entry := range wants {
 		if entry.Cid.Prefix().MhType == mh.IDENTITY {
@@ -708,6 +728,31 @@ func (e *Engine) MessageReceived(ctx context.Context, p peer.ID, m bsmsg.BitSwap
 		clear[i] = bsmsg.Entry{} // early GC
 	}
 	wants = filteredWants
+
+	relayKs := bsrm.NewKeyTracker(p)
+
+	for _, entry := range forwards {
+		if entry.Cid.Prefix().MhType == mh.IDENTITY {
+			// This is a truely broken client, let's kill the connection.
+			e.lock.Unlock()
+			log.Warnw("peer forwarded a want for an identity CID", "local", e.self, "remote", p)
+			return true
+		}
+		if e.maxCidSize != 0 && uint(entry.Cid.ByteLen()) > e.maxCidSize {
+			// Ignore requests about CIDs that big.
+			continue
+		}
+
+		log.Debugf("Updating tracker to start a new relay session for %s, %d", entry.Cid, entry.Priority)
+		relayKs.UpdateTracker(entry.Cid)
+		filteredForwards = append(filteredForwards, entry)
+	}
+	clearForwards := forwards[len(filteredForwards):]
+	for i := range clearForwards {
+		clear[i] = bsmsg.Entry{} // early GC
+	}
+	forwards = filteredForwards
+
 	for _, entry := range cancels {
 		if entry.Cid.Prefix().MhType == mh.IDENTITY {
 			// This is a truely broken client, let's kill the connection.
@@ -725,6 +770,12 @@ func (e *Engine) MessageReceived(ctx context.Context, p peer.ID, m bsmsg.BitSwap
 			e.peerRequestQueue.Remove(entry.Cid, p)
 		}
 	}
+	// TODO / maybe implement cancel for relay session as above [cancel weiterleiten (see todo markdown)]
+	// if e.relaySession.Session != nil {
+	// 	log.Debugf("local: %v Removing cid %v for %v from relay session registry due to a cancel", e.self, entry.Cid, p)
+	// 	e.relaySession.RemoveInterest(entry.Cid, p)
+	//
+	// }
 	e.lock.Unlock()
 
 	var activeEntries []peertask.Task
@@ -798,6 +849,13 @@ func (e *Engine) MessageReceived(ctx context.Context, p peer.ID, m bsmsg.BitSwap
 				},
 			})
 		}
+	}
+
+	if len(relayKs.T) > 0 {
+		// Update relayLedger with new keys.
+		// Makes a decision for each cid either to continue forwarding
+		// or starting a proxy session.
+		e.relayManager.ProcessForwards(ctx, relayKs)
 	}
 
 	// Push entries onto the request queue

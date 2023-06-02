@@ -13,6 +13,7 @@ import (
 	pb "github.com/ipfs/boxo/bitswap/message/pb"
 	bmetrics "github.com/ipfs/boxo/bitswap/metrics"
 	bsnet "github.com/ipfs/boxo/bitswap/network"
+	bsrm "github.com/ipfs/boxo/bitswap/relaymanager"
 	"github.com/ipfs/boxo/bitswap/server/internal/decision"
 	"github.com/ipfs/boxo/bitswap/tracer"
 	blockstore "github.com/ipfs/boxo/blockstore"
@@ -36,6 +37,8 @@ const provideWorkerMax = 6
 type Option func(*Server)
 
 type Server struct {
+	rm *bsrm.RelayManager
+
 	sentHistogram     metrics.Histogram
 	sendTimeHistogram metrics.Histogram
 
@@ -73,7 +76,7 @@ type Server struct {
 	provideEnabled bool
 }
 
-func New(ctx context.Context, network bsnet.BitSwapNetwork, bstore blockstore.Blockstore, options ...Option) *Server {
+func New(ctx context.Context, network bsnet.BitSwapNetwork, bstore blockstore.Blockstore, rm *bsrm.RelayManager, options ...Option) *Server {
 	ctx, cancel := context.WithCancel(ctx)
 
 	px := process.WithTeardown(func() error {
@@ -85,6 +88,7 @@ func New(ctx context.Context, network bsnet.BitSwapNetwork, bstore blockstore.Bl
 	}()
 
 	s := &Server{
+		rm:                 rm,
 		sentHistogram:      bmetrics.SentHist(ctx),
 		sendTimeHistogram:  bmetrics.SendTimeHist(ctx),
 		taskWorkerCount:    defaults.BitswapTaskWorkerCount,

@@ -8,6 +8,7 @@ import (
 	"github.com/ipfs/boxo/bitswap/internal/defaults"
 	"github.com/ipfs/boxo/bitswap/message"
 	"github.com/ipfs/boxo/bitswap/network"
+	bsrm "github.com/ipfs/boxo/bitswap/relaymanager"
 	"github.com/ipfs/boxo/bitswap/server"
 	"github.com/ipfs/boxo/bitswap/tracer"
 	"github.com/ipfs/go-metrics-interface"
@@ -89,8 +90,9 @@ func New(ctx context.Context, net network.BitSwapNetwork, bstore blockstore.Bloc
 
 	ctx = metrics.CtxSubScope(ctx, "bitswap")
 
-	bs.Server = server.New(ctx, net, bstore, serverOptions...)
-	bs.Client = client.New(ctx, net, bstore, append(clientOptions, client.WithBlockReceivedNotifier(bs.Server))...)
+	rm := bsrm.NewRelayManager()
+	bs.Server = server.New(ctx, net, bstore, rm, serverOptions...)
+	bs.Client = client.New(ctx, net, bstore, rm, append(clientOptions, client.WithBlockReceivedNotifier(bs.Server))...)
 	net.Start(bs) // use the polyfill receiver to log received errors and trace messages only once
 
 	return bs
