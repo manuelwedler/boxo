@@ -83,11 +83,12 @@ type MessageQueue struct {
 	responses chan []cid.Cid
 
 	// Take lock whenever any of these variables are modified
-	wllock    sync.Mutex
-	bcstWants recallWantlist
-	peerWants recallWantlist
-	cancels   *cid.Set
-	priority  int32
+	wllock       sync.Mutex
+	forwardWants recallWantlist
+	bcstWants    recallWantlist
+	peerWants    recallWantlist
+	cancels      *cid.Set
+	priority     int32
 
 	// Dont touch any of these variables outside of run loop
 	sender                bsnet.MessageSender
@@ -250,6 +251,7 @@ func newMessageQueue(
 		network:             network,
 		dhTimeoutMgr:        dhTimeoutMgr,
 		maxMessageSize:      maxMsgSize,
+		forwardWants:        newRecallWantList(),
 		bcstWants:           newRecallWantList(),
 		peerWants:           newRecallWantList(),
 		cancels:             cid.NewSet(),
@@ -265,6 +267,28 @@ func newMessageQueue(
 		clock:  clock,
 		events: events,
 	}
+}
+
+// Add want-forwards
+func (mq *MessageQueue) AddForwardWants(wantHaves []cid.Cid) {
+	if len(wantHaves) == 0 {
+		return
+	}
+
+	mq.wllock.Lock()
+	defer mq.wllock.Unlock()
+
+	for _, c := range wantHaves {
+		mq.forwardWants.Add(c, mq.priority, pb.Message_Wantlist_Forward)
+		mq.priority--
+
+		// We're adding a want-have for the cid, so clear any pending cancel
+		// for the cid
+		mq.cancels.Remove(c)
+	}
+
+	// Schedule a message send
+	mq.signalWorkReady()
 }
 
 // Add want-haves that are part of a broadcast to all connected peers
@@ -334,6 +358,8 @@ func (mq *MessageQueue) AddCancels(cancelKs []cid.Cid) {
 
 	// Remove keys from broadcast and peer wants, and add to cancels
 	for _, c := range cancelKs {
+		// TODO / cancel feature: removing want-forwards would be a problem,
+		// TODO / because we are not looking for a block but peers having the block.
 		// Check if a want for the key was sent
 		_, wasSentBcst := mq.bcstWants.sent.Contains(c)
 		_, wasSentPeer := mq.peerWants.sent.Contains(c)
@@ -486,11 +512,12 @@ func (mq *MessageQueue) transferRebroadcastWants() bool {
 	defer mq.wllock.Unlock()
 
 	// Check if there are any wants to rebroadcast
-	if mq.bcstWants.sent.Len() == 0 && mq.peerWants.sent.Len() == 0 {
+	if mq.forwardWants.sent.Len() == 0 && mq.bcstWants.sent.Len() == 0 && mq.peerWants.sent.Len() == 0 {
 		return false
 	}
 
 	// Copy sent wants into pending wants lists
+	mq.forwardWants.pending.Absorb(mq.forwardWants.sent)
 	mq.bcstWants.pending.Absorb(mq.bcstWants.sent)
 	mq.peerWants.pending.Absorb(mq.peerWants.sent)
 
@@ -535,7 +562,9 @@ func (mq *MessageQueue) sendMessage() {
 	}
 
 	wantlist := message.Wantlist()
+	forwardlist := message.Forwardlist()
 	mq.logOutgoingMessage(wantlist)
+	mq.logOutgoingMessage(forwardlist)
 
 	if err := sender.SendMsg(mq.ctx, message); err != nil {
 		// If the message couldn't be sent, the networking layer will
@@ -606,6 +635,12 @@ func (mq *MessageQueue) handleResponse(ks []cid.Cid) {
 	//   - peer A later receives the block from peer B
 	//   - peer A sends us HAVE / block
 	for _, c := range ks {
+		if at, ok := mq.forwardWants.sentAt[c]; ok {
+			if (earliest.IsZero() || at.Before(earliest)) && now.Sub(at) < mq.maxValidLatency {
+				earliest = at
+			}
+			mq.forwardWants.ClearSentAt(c)
+		}
 		if at, ok := mq.bcstWants.sentAt[c]; ok {
 			if (earliest.IsZero() || at.Before(earliest)) && now.Sub(at) < mq.maxValidLatency {
 				earliest = at
@@ -642,7 +677,7 @@ func (mq *MessageQueue) logOutgoingMessage(wantlist []bsmsg.Entry) {
 
 	self := mq.network.Self()
 	for _, e := range wantlist {
-		if e.Cancel {
+		if e.Cancel { // TODO / cancel forward feature.
 			if e.WantType == pb.Message_Wantlist_Have {
 				log.Debugw("sent message",
 					"type", "CANCEL_WANT_HAVE",
@@ -666,9 +701,16 @@ func (mq *MessageQueue) logOutgoingMessage(wantlist []bsmsg.Entry) {
 					"local", self,
 					"to", mq.p,
 				)
-			} else {
+			} else if e.WantType == pb.Message_Wantlist_Block {
 				log.Debugw("sent message",
 					"type", "WANT_BLOCK",
+					"cid", e.Cid,
+					"local", self,
+					"to", mq.p,
+				)
+			} else {
+				log.Debugw("sent message",
+					"type", "WANT_FORWARD",
 					"cid", e.Cid,
 					"local", self,
 					"to", mq.p,
@@ -688,7 +730,7 @@ func (mq *MessageQueue) pendingWorkCount() int {
 	mq.wllock.Lock()
 	defer mq.wllock.Unlock()
 
-	return mq.bcstWants.pending.Len() + mq.peerWants.pending.Len() + mq.cancels.Len()
+	return mq.forwardWants.pending.Len() + mq.bcstWants.pending.Len() + mq.peerWants.pending.Len() + mq.cancels.Len()
 }
 
 // Convert the lists of wants into a Bitswap message
@@ -696,6 +738,7 @@ func (mq *MessageQueue) extractOutgoingMessage(supportsHave bool) (bsmsg.BitSwap
 	// Get broadcast and regular wantlist entries.
 	mq.wllock.Lock()
 	peerEntries := mq.peerWants.pending.Entries()
+	forwardEntries := mq.forwardWants.pending.Entries()
 	bcstEntries := mq.bcstWants.pending.Entries()
 	cancels := mq.cancels.Keys()
 	if !supportsHave {
@@ -722,10 +765,11 @@ func (mq *MessageQueue) extractOutgoingMessage(supportsHave bool) (bsmsg.BitSwap
 	// We prioritize cancels, then regular wants, then broadcast wants.
 
 	var (
-		msgSize         = 0 // size of message so far
-		sentCancels     = 0 // number of cancels in message
-		sentPeerEntries = 0 // number of peer entries in message
-		sentBcstEntries = 0 // number of broadcast entries in message
+		msgSize            = 0 // size of message so far
+		sentCancels        = 0 // number of cancels in message
+		sentPeerEntries    = 0 // number of peer entries in message
+		sentForwardEntries = 0 // number of forward entries in message
+		sentBcstEntries    = 0 // number of broadcast entries in message
 	)
 
 	// Add each cancel to the message
@@ -744,6 +788,16 @@ func (mq *MessageQueue) extractOutgoingMessage(supportsHave bool) (bsmsg.BitSwap
 	for _, e := range peerEntries {
 		msgSize += mq.msg.AddEntry(e.Cid, e.Priority, e.WantType, true)
 		sentPeerEntries++
+
+		if msgSize >= mq.maxMessageSize {
+			goto FINISH
+		}
+	}
+
+	// Add each want-forward to the message
+	for _, e := range forwardEntries {
+		msgSize += mq.msg.AddForwardEntry(e.Cid, e.Priority)
+		sentForwardEntries++
 
 		if msgSize >= mq.maxMessageSize {
 			goto FINISH
@@ -782,6 +836,13 @@ FINISH:
 		}
 	}
 
+	for i, e := range forwardEntries[:sentForwardEntries] {
+		if !mq.forwardWants.MarkSent(e) {
+			mq.msg.RemoveForward(e.Cid)
+			forwardEntries[i].Cid = cid.Undef
+		}
+	}
+
 	for i, e := range bcstEntries[:sentBcstEntries] {
 		if !mq.bcstWants.MarkSent(e) {
 			mq.msg.Remove(e.Cid)
@@ -809,6 +870,12 @@ FINISH:
 		for _, e := range peerEntries[:sentPeerEntries] {
 			if e.Cid.Defined() { // Check if want was cancelled in the interim
 				mq.peerWants.SentAt(e.Cid, now)
+			}
+		}
+
+		for _, e := range forwardEntries[:sentBcstEntries] {
+			if e.Cid.Defined() { // Check if want was cancelled in the interim
+				mq.forwardWants.SentAt(e.Cid, now)
 			}
 		}
 

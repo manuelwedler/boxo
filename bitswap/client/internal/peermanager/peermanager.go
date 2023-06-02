@@ -15,6 +15,7 @@ var log = logging.Logger("bs:peermgr")
 
 // PeerQueue provides a queue of messages to be sent for a single peer.
 type PeerQueue interface {
+	AddForwardWants([]cid.Cid)
 	AddBroadcastWantHaves([]cid.Cid)
 	AddWants([]cid.Cid, []cid.Cid)
 	AddCancels([]cid.Cid)
@@ -128,6 +129,15 @@ func (pm *PeerManager) ResponseReceived(p peer.ID, ks []cid.Cid) {
 	if ok {
 		pq.ResponseReceived(ks)
 	}
+}
+
+// ForwardWants sends want-forwards to one peer (used by the session
+// to discover seeds).
+func (pm *PeerManager) ForwardWants(ctx context.Context, wantHaves []cid.Cid) {
+	pm.pqLk.Lock()
+	defer pm.pqLk.Unlock()
+
+	pm.pwm.forwardWants(wantHaves)
 }
 
 // BroadcastWantHaves broadcasts want-haves to all peers (used by the session

@@ -36,6 +36,9 @@ type PeerManager interface {
 	UnregisterSession(uint64)
 	// SendWants tells the PeerManager to send wants to the given peer
 	SendWants(ctx context.Context, peerId peer.ID, wantBlocks []cid.Cid, wantHaves []cid.Cid)
+	// ForwardWants sends want-forwards to one connected peer (used for
+	// session discovery)
+	ForwardWants(context.Context, []cid.Cid)
 	// BroadcastWantHaves sends want-haves to all connected peers (used for
 	// session discovery)
 	BroadcastWantHaves(context.Context, []cid.Cid)
@@ -272,7 +275,7 @@ func (s *Session) onWantsSent(p peer.ID, wantBlocks []cid.Cid, wantHaves []cid.C
 
 // onPeersExhausted is called when all available peers have sent DONT_HAVE for
 // a set of cids (or all peers become unavailable)
-func (s *Session) onPeersExhausted(ks []cid.Cid) {
+func (s *Session) onPeersExhausted(ks []cid.Cid) { // TODO /
 	s.nonBlockingEnqueue(op{op: opBroadcast, keys: ks})
 }
 
@@ -309,7 +312,7 @@ func (s *Session) run(ctx context.Context) {
 			case opWant:
 				// Client wants blocks
 				s.wantBlocks(ctx, oper.keys)
-			case opCancel:
+			case opCancel: // TODO / Cancel gets forwarded to correct peer? Would need to store where WANT gets sent to
 				// Wants were cancelled
 				s.sw.CancelPending(oper.keys)
 				s.sws.Cancel(oper.keys)
@@ -439,7 +442,7 @@ func (s *Session) handleReceive(ks []cid.Cid) {
 
 // wantBlocks is called when blocks are requested by the client
 func (s *Session) wantBlocks(ctx context.Context, newks []cid.Cid) {
-	if len(newks) > 0 {
+	if len(newks) > 0 { // TODO /
 		// Inform the SessionInterestManager that this session is interested in the keys
 		s.sim.RecordSessionInterest(s.id, newks)
 		// Tell the sessionWants tracker that that the wants have been requested
@@ -457,9 +460,17 @@ func (s *Session) wantBlocks(ctx context.Context, newks []cid.Cid) {
 	// No peers discovered yet, broadcast some want-haves
 	ks := s.sw.GetNextWants()
 	if len(ks) > 0 {
-		log.Infow("No peers - broadcasting", "session", s.id, "want-count", len(ks))
-		s.broadcastWantHaves(ctx, ks)
+		s.forwardWants(ctx, ks)
+		// TODO / relay session should do this. also consider peersdiscovered() case above.
+		// log.Infow("No peers - broadcasting", "session", s.id, "want-count", len(ks))
+		// s.broadcastWantHaves(ctx, ks)
 	}
+}
+
+// Send want-forwards to one connected peer
+func (s *Session) forwardWants(ctx context.Context, wants []cid.Cid) {
+	log.Debugw("forwardWants", "session", s.id, "cids", wants)
+	s.pm.ForwardWants(ctx, wants)
 }
 
 // Send want-haves to all connected peers

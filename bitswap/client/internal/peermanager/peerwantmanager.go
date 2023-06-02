@@ -3,6 +3,8 @@ package peermanager
 import (
 	"bytes"
 	"fmt"
+	"math/rand"
+	"time"
 
 	cid "github.com/ipfs/go-cid"
 	peer "github.com/libp2p/go-libp2p/core/peer"
@@ -112,6 +114,29 @@ func (pwm *peerWantManager) removePeer(p peer.ID) {
 	})
 
 	delete(pwm.peerWants, p)
+}
+
+// Selects a random peer for forwarding.
+func (pwm *peerWantManager) selectRandomPeer() peer.ID {
+	rand.Seed(time.Now().UnixNano())
+	perm := rand.Perm(len(pwm.peerWants))
+
+	ks := make([]peer.ID, 0)
+	// Get all peers available to broadcast
+	for k := range pwm.peerWants {
+		ks = append(ks, k)
+	}
+
+	// Choose a random one.
+	return ks[perm[0]]
+}
+
+// forwardWants sends want-forwards to one peer.
+func (pwm *peerWantManager) forwardWants(wantHaves []cid.Cid) {
+	// TODO / maybe add a forwardWants property like in the broadcast method
+
+	p := pwm.selectRandomPeer()
+	pwm.peerWants[p].peerQueue.AddForwardWants(wantHaves)
 }
 
 // broadcastWantHaves sends want-haves to any peers that have not yet been sent them.
