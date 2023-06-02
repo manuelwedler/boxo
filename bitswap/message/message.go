@@ -235,7 +235,11 @@ func newMessageFromProto(pbm pb.Message) (BitSwapMessage, error) {
 		if !e.Block.Cid.Defined() {
 			return nil, errCidMissing
 		}
-		m.addEntry(e.Block.Cid, e.Priority, e.Cancel, e.WantType, e.SendDontHave)
+		if e.WantType == pb.Message_Wantlist_Forward {
+			m.addForwardEntry(e.Block.Cid, e.Priority, e.Cancel)
+		} else {
+			m.addEntry(e.Block.Cid, e.Priority, e.Cancel, e.WantType, e.SendDontHave)
+		}
 	}
 
 	// deprecated
@@ -269,7 +273,7 @@ func newMessageFromProto(pbm pb.Message) (BitSwapMessage, error) {
 		if !bi.Cid.Cid.Defined() {
 			return nil, errCidMissing
 		}
-		if bi.GetType() == pb.Message_ForwardHave {
+		if bi.Type == pb.Message_ForwardHave {
 			peers := make([]peer.ID, 0, len(bi.PeerIds))
 			for _, bs := range bi.PeerIds {
 				p, err := peer.IDFromBytes(bs)
@@ -560,6 +564,9 @@ func (m *impl) ToProtoV1() *pb.Message {
 	pbm.Wantlist.Entries = make([]pb.Message_Wantlist_Entry, 0, len(m.wantlist))
 	for _, e := range m.wantlist {
 		pbm.Wantlist.Entries = append(pbm.Wantlist.Entries, e.ToPB())
+	}
+	for _, f := range m.forwardlist {
+		pbm.Wantlist.Entries = append(pbm.Wantlist.Entries, f.ToPB())
 	}
 	pbm.Wantlist.Full = m.full
 
