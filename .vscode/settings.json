@@ -8,7 +8,6 @@
         "datastore/": true,
         "docs/": true,
         "examples/": true,
-        "exchange/": true,
         "fetcher/": true,
         "files/": true,
         "filestore/": true,
