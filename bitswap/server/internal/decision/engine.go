@@ -956,11 +956,11 @@ func (e *Engine) PeerDisconnected(p peer.ID) {
 	e.scoreLedger.PeerDisconnected(p)
 }
 
-// If the want is a want-have, and it's below a certain size, send the full
-// block (instead of sending a HAVE)
+// Blocks should only be exchanged directly, therefore, when we respond to a
+// want-have, we don't send blocks even if they are small.
 func (e *Engine) sendAsBlock(wantType pb.Message_Wantlist_WantType, blockSize int) bool {
 	isWantBlock := wantType == pb.Message_Wantlist_Block
-	return isWantBlock || blockSize <= e.maxBlockSizeReplaceHasWithBlock
+	return isWantBlock
 }
 
 func (e *Engine) numBytesSentTo(p peer.ID) uint64 {
