@@ -162,8 +162,8 @@ type impl struct {
 	wantlist            map[cid.Cid]*Entry
 	forwardlist         map[cid.Cid]*Entry
 	blocks              map[cid.Cid]blocks.Block
-	blockPresences      map[cid.Cid]pb.Message_BlockPresenceType
-	blockPresencesPeers map[cid.Cid][]peer.ID
+	blockPresences      map[cid.Cid]pb.Message_BlockPresenceType // Should not include FORWARD_HAVES
+	blockPresencesPeers map[cid.Cid][]peer.ID                    // An entry here means that the message contains a FORWARD_HAVE
 	pendingBytes        int32
 }
 
@@ -473,7 +473,6 @@ func (m *impl) AddDontHave(c cid.Cid) {
 }
 
 func (m *impl) AddForwardHave(c cid.Cid, ps []peer.ID) {
-	m.blockPresences[c] = pb.Message_ForwardHave
 	if m.blockPresencesPeers[c] == nil {
 		m.blockPresencesPeers[c] = make([]peer.ID, 0, len(ps))
 	}
@@ -486,19 +485,20 @@ func (m *impl) Size() int {
 		size += len(block.RawData())
 	}
 	for c := range m.blockPresences {
+		size += BlockPresenceSize(c)
+	}
+	for c := range m.blockPresencesPeers {
 		peers := make([][]byte, 0, len(m.blockPresencesPeers[c]))
-		ps, exists := m.blockPresencesPeers[c]
-		if exists {
-			for _, p := range ps {
-				mp, err := p.MarshalBinary()
-				if err == nil {
-					peers = append(peers, mp)
-				}
+		ps := m.blockPresencesPeers[c]
+		for _, p := range ps {
+			mp, err := p.MarshalBinary()
+			if err == nil {
+				peers = append(peers, mp)
 			}
 		}
 		presence := &pb.Message_BlockPresence{
 			Cid:     pb.Cid{Cid: c},
-			Type:    pb.Message_Have,
+			Type:    pb.Message_ForwardHave,
 			PeerIds: peers,
 		}
 		size += presence.Size()
@@ -579,21 +579,24 @@ func (m *impl) ToProtoV1() *pb.Message {
 		})
 	}
 
-	pbm.BlockPresences = make([]pb.Message_BlockPresence, 0, len(m.blockPresences))
+	pbm.BlockPresences = make([]pb.Message_BlockPresence, 0, len(m.blockPresences)+len(m.blockPresencesPeers))
 	for c, t := range m.blockPresences {
+		pbm.BlockPresences = append(pbm.BlockPresences, pb.Message_BlockPresence{
+			Cid:  pb.Cid{Cid: c},
+			Type: t,
+		})
+	}
+	for c, ps := range m.blockPresencesPeers {
 		peers := make([][]byte, 0, len(m.blockPresencesPeers[c]))
-		ps, exists := m.blockPresencesPeers[c]
-		if exists {
-			for _, p := range ps {
-				mp, err := p.Marshal()
-				if err == nil {
-					peers = append(peers, mp)
-				}
+		for _, p := range ps {
+			mp, err := p.Marshal()
+			if err == nil {
+				peers = append(peers, mp)
 			}
 		}
 		pbm.BlockPresences = append(pbm.BlockPresences, pb.Message_BlockPresence{
 			Cid:     pb.Cid{Cid: c},
-			Type:    t,
+			Type:    pb.Message_ForwardHave,
 			PeerIds: peers,
 		})
 	}
