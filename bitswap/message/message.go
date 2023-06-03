@@ -35,8 +35,8 @@ type BitSwapMessage interface {
 	Haves() []cid.Cid
 	// DontHaves returns the Cids for each DONT_HAVE
 	DontHaves() []cid.Cid
-	// RelayedHaves returns a list of peers that responded with a HAVE per Cid
-	RelayedHaves() map[cid.Cid][]peer.ID
+	// ForwardHaves returns a list of peers that responded with a HAVE per Cid
+	ForwardHaves() map[cid.Cid][]peer.ID
 	// PendingBytes returns the number of outstanding bytes of data that the
 	// engine has yet to send to the client (because they didn't fit in this
 	// message)
@@ -78,8 +78,8 @@ type BitSwapMessage interface {
 	AddHave(cid.Cid)
 	// AddDontHave adds a DONT_HAVE for the given Cid to the message
 	AddDontHave(cid.Cid)
-	// AddRelayedHave adds a list of peers that have responded with a HAVE for the given Cid
-	AddRelayedHave(cid.Cid, []peer.ID)
+	// AddForwardHave adds a list of peers that have responded with a HAVE for the given Cid
+	AddForwardHave(cid.Cid, []peer.ID)
 	// SetPendingBytes sets the number of bytes of data that are yet to be sent
 	// to the client (because they didn't fit in this message)
 	SetPendingBytes(int32)
@@ -281,7 +281,7 @@ func newMessageFromProto(pbm pb.Message) (BitSwapMessage, error) {
 					peers = append(peers, p)
 				}
 			}
-			m.AddRelayedHave(bi.Cid.Cid, peers)
+			m.AddForwardHave(bi.Cid.Cid, peers)
 		} else {
 			m.AddBlockPresence(bi.Cid.Cid, bi.Type)
 		}
@@ -340,7 +340,7 @@ func (m *impl) DontHaves() []cid.Cid {
 	return m.getBlockPresenceByType(pb.Message_DontHave)
 }
 
-func (m *impl) RelayedHaves() map[cid.Cid][]peer.ID {
+func (m *impl) ForwardHaves() map[cid.Cid][]peer.ID {
 	cids := make(map[cid.Cid][]peer.ID)
 	for c, ps := range m.blockPresencesPeers {
 		if cids[c] == nil {
@@ -472,7 +472,7 @@ func (m *impl) AddDontHave(c cid.Cid) {
 	m.AddBlockPresence(c, pb.Message_DontHave)
 }
 
-func (m *impl) AddRelayedHave(c cid.Cid, ps []peer.ID) {
+func (m *impl) AddForwardHave(c cid.Cid, ps []peer.ID) {
 	m.blockPresences[c] = pb.Message_ForwardHave
 	if m.blockPresencesPeers[c] == nil {
 		m.blockPresencesPeers[c] = make([]peer.ID, 0, len(ps))
