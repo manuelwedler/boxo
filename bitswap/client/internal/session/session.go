@@ -133,6 +133,10 @@ type Session struct {
 	id    uint64
 
 	self peer.ID
+
+	// Determines if the session is only used for discovery in place
+	// of another peer and FORWARD_HAVEs are sent back via the relaymanager.
+	proxy bool // TODO / Initialize in relaymanager
 }
 
 // New creates a new bitswap session whose lifetime is bounded by the
@@ -149,7 +153,7 @@ func New(
 	notif notifications.PubSub,
 	initialSearchDelay time.Duration,
 	periodicSearchDelay delay.D,
-	self peer.ID) *Session {
+	self peer.ID) *Session { // TODO / add some interface to send the forward_haves
 
 	ctx, cancel := context.WithCancel(ctx)
 	s := &Session{
@@ -334,7 +338,7 @@ func (s *Session) run(ctx context.Context) {
 		case baseTickDelay := <-s.tickDelayReqs:
 			// Set the base tick delay
 			s.baseTickDelay = baseTickDelay
-		case <-ctx.Done():
+		case <-ctx.Done(): // TODO / when is the time a proxy session can be closed? Needs to be closed otherwise the periodic broadcasts continue forever.
 			// Shutdown
 			s.handleShutdown()
 			return
@@ -346,6 +350,7 @@ func (s *Session) run(ctx context.Context) {
 // all peers in the session have sent DONT_HAVE for a particular set of CIDs.
 // Send want-haves to all connected peers, and search for new peers with the CID.
 func (s *Session) broadcast(ctx context.Context, wants []cid.Cid) {
+	// TODO / dont do in non-proxy sessions
 	// If this broadcast is because of an idle timeout (we haven't received
 	// any blocks for a while) then broadcast all pending wants
 	if wants == nil {
@@ -375,6 +380,7 @@ func (s *Session) broadcast(ctx context.Context, wants []cid.Cid) {
 // handlePeriodicSearch is called periodically to search for providers of a
 // randomly chosen CID in the sesssion.
 func (s *Session) handlePeriodicSearch(ctx context.Context) {
+	// TODO / dont do in non-proxy sessions
 	randomWant := s.sw.RandomLiveWant()
 	if !randomWant.Defined() {
 		return
@@ -442,7 +448,9 @@ func (s *Session) handleReceive(ks []cid.Cid) {
 
 // wantBlocks is called when blocks are requested by the client
 func (s *Session) wantBlocks(ctx context.Context, newks []cid.Cid) {
-	if len(newks) > 0 { // TODO /
+	// TODO / Proxy should not trigger WANT-BLOCK messages. Check related structs if they do so.
+	// TODO / Make sure that usual session only calls the necessary
+	if len(newks) > 0 {
 		// Inform the SessionInterestManager that this session is interested in the keys
 		s.sim.RecordSessionInterest(s.id, newks)
 		// Tell the sessionWants tracker that that the wants have been requested
@@ -453,17 +461,20 @@ func (s *Session) wantBlocks(ctx context.Context, newks []cid.Cid) {
 
 	// If we have discovered peers already, the sessionWantSender will
 	// send wants to them
-	if s.sprm.PeersDiscovered() {
+	if s.sprm.PeersDiscovered() { // TODO / Proxy session does not need to record session peers.
 		return
 	}
 
 	// No peers discovered yet, broadcast some want-haves
 	ks := s.sw.GetNextWants()
 	if len(ks) > 0 {
-		s.forwardWants(ctx, ks)
-		// TODO / relay session should do this. also consider peersdiscovered() case above.
-		// log.Infow("No peers - broadcasting", "session", s.id, "want-count", len(ks))
-		// s.broadcastWantHaves(ctx, ks)
+		if s.proxy {
+			log.Infow("No peers - broadcasting", "session", s.id, "want-count", len(ks))
+			s.broadcastWantHaves(ctx, ks)
+		} else {
+			log.Infow("No peers - forwarding", "session", s.id, "want-count", len(ks))
+			s.forwardWants(ctx, ks)
+		}
 	}
 }
 

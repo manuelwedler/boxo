@@ -133,8 +133,6 @@ func (pwm *peerWantManager) selectRandomPeer() peer.ID {
 
 // forwardWants sends want-forwards to one peer.
 func (pwm *peerWantManager) forwardWants(wantHaves []cid.Cid) {
-	// TODO / maybe add a forwardWants property like in the broadcast method
-
 	p := pwm.selectRandomPeer() // TODO / different strategies for selecting the first peer
 	// TODO / next peer should be selected without strategy
 	pwm.peerWants[p].peerQueue.AddForwardWants(wantHaves)

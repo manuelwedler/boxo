@@ -42,7 +42,7 @@ func NewRelayManager() *RelayManager {
 
 // ProcessForwards randomly decides for each cid either to forward it or start a
 // proxy session. For the random decision proxyTransitionProb is used.
-// The relayledger is updated the with the cids.
+// The relayledger is updated with the cids.
 func (rm *RelayManager) ProcessForwards(ctx context.Context, kt *keyTracker) {
 	rm.Ledger.Update(kt)
 	forwards := kt.T
