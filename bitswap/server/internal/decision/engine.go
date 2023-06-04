@@ -666,7 +666,7 @@ func (e *Engine) MessageReceived(ctx context.Context, p peer.ID, m bsmsg.BitSwap
 		log.Infof("received empty message from %s", p)
 	}
 
-	newWorkExists := false // TODO / make sure my changes change the flag
+	newWorkExists := false
 	defer func() {
 		if newWorkExists {
 			e.signalNewWork()

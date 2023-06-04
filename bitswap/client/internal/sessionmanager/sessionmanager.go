@@ -40,7 +40,8 @@ type SessionFactory func(
 	notif notifications.PubSub,
 	provSearchDelay time.Duration,
 	rebroadcastDelay delay.D,
-	self peer.ID) Session
+	self peer.ID,
+	proxy bool) Session
 
 // PeerManagerFactory generates a new peer manager for a session.
 type PeerManagerFactory func(ctx context.Context, id uint64) bssession.SessionPeerManager
@@ -95,7 +96,29 @@ func (sm *SessionManager) NewSession(ctx context.Context,
 	defer span.End()
 
 	pm := sm.peerManagerFactory(ctx, id)
-	session := sm.sessionFactory(ctx, sm, id, pm, sm.sessionInterestManager, sm.peerManager, sm.blockPresenceManager, sm.notif, provSearchDelay, rebroadcastDelay, sm.self)
+	session := sm.sessionFactory(ctx, sm, id, pm, sm.sessionInterestManager, sm.peerManager, sm.blockPresenceManager, sm.notif, provSearchDelay, rebroadcastDelay, sm.self, false)
+
+	sm.sessLk.Lock()
+	if sm.sessions != nil { // check if SessionManager was shutdown
+		sm.sessions[id] = session
+	}
+	sm.sessLk.Unlock()
+
+	return session
+}
+
+// NewProxySession initializes a proxy session with the given context, and adds to the
+// session manager.
+func (sm *SessionManager) NewProxySession(ctx context.Context,
+	provSearchDelay time.Duration,
+	rebroadcastDelay delay.D) exchange.Fetcher {
+	id := sm.GetNextSessionID()
+
+	ctx, span := internal.StartSpan(ctx, "SessionManager.NewProxySession", trace.WithAttributes(attribute.String("ID", strconv.FormatUint(id, 10))))
+	defer span.End()
+
+	pm := sm.peerManagerFactory(ctx, id)
+	session := sm.sessionFactory(ctx, sm, id, pm, sm.sessionInterestManager, sm.peerManager, sm.blockPresenceManager, sm.notif, provSearchDelay, rebroadcastDelay, sm.self, true)
 
 	sm.sessLk.Lock()
 	if sm.sessions != nil { // check if SessionManager was shutdown

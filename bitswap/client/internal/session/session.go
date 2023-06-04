@@ -153,7 +153,8 @@ func New(
 	notif notifications.PubSub,
 	initialSearchDelay time.Duration,
 	periodicSearchDelay delay.D,
-	self peer.ID) *Session { // TODO / add some interface to send the forward_haves
+	self peer.ID,
+	proxy bool) *Session { // TODO / add some interface to send the forward_haves
 
 	ctx, cancel := context.WithCancel(ctx)
 	s := &Session{
@@ -174,6 +175,7 @@ func New(
 		initialSearchDelay:  initialSearchDelay,
 		periodicSearchDelay: periodicSearchDelay,
 		self:                self,
+		proxy:               proxy,
 	}
 	s.sws = newSessionWantSender(id, pm, sprm, sm, bpm, s.onWantsSent, s.onPeersExhausted)
 

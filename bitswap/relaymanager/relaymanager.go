@@ -6,6 +6,7 @@ import (
 	"sync"
 	"time"
 
+	exchange "github.com/ipfs/boxo/exchange"
 	cid "github.com/ipfs/go-cid"
 	logging "github.com/ipfs/go-log"
 	peer "github.com/libp2p/go-libp2p/core/peer"
@@ -24,15 +25,20 @@ type ForwardSender interface {
 	ForwardWants(context.Context, []cid.Cid)
 }
 
+// CreateProxySession initializes a proxy session with the given context.
+type CreateProxySession func(ctx context.Context) exchange.Fetcher
+
 type RelayManager struct {
 	Forwarder           ForwardSender
+	CreateProxySession  CreateProxySession
 	Ledger              *RelayLedger
 	proxyTransitionProb float64
 }
 
 func NewRelayManager() *RelayManager {
 	return &RelayManager{
-		Forwarder: nil,
+		Forwarder:          nil,
+		CreateProxySession: nil,
 		Ledger: &RelayLedger{
 			r: make(map[cid.Cid]map[peer.ID]bool, 0),
 		},
@@ -51,11 +57,17 @@ func (rm *RelayManager) ProcessForwards(ctx context.Context, kt *keyTracker) {
 	for _, c := range forwards {
 		rnd := rand.Float64()
 
+		cs := make([]cid.Cid, 0, 1)
+		cs = append(cs, c)
 		if rnd <= rm.proxyTransitionProb {
 			// TODO / Start proxy session
+			// TODO / what context?
+			// TODO / where to store? storing needed?
+			session := rm.CreateProxySession(ctx)
+			// Maybe implement as goroutine, channel would return peers who have the block.
+			// Then we directly send the FORWARD_HAVEs back in this place.
+			session.GetBlocks(ctx, cs)
 		} else {
-			cs := make([]cid.Cid, 0, 1)
-			cs = append(cs, c)
 			rm.Forwarder.ForwardWants(ctx, cs)
 		}
 	}
