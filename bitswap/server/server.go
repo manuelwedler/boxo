@@ -109,6 +109,7 @@ func New(ctx context.Context, network bsnet.BitSwapNetwork, bstore blockstore.Bl
 		bstore,
 		network.ConnectionManager(),
 		network.Self(),
+		rm,
 		s.engineOptions...,
 	)
 	s.engineOptions = nil

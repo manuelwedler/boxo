@@ -108,10 +108,12 @@ type sessionWantSender struct {
 	onSend onSendFn
 	// Called when all peers explicitly don't have a block
 	onPeersExhausted onPeersExhaustedFn
+	// Flag to indicate that this sessionWantSender is used by a proxy session.
+	proxy bool
 }
 
 func newSessionWantSender(sid uint64, pm PeerManager, spm SessionPeerManager, canceller SessionWantsCanceller,
-	bpm *bsbpm.BlockPresenceManager, onSend onSendFn, onPeersExhausted onPeersExhaustedFn) sessionWantSender {
+	bpm *bsbpm.BlockPresenceManager, onSend onSendFn, onPeersExhausted onPeersExhaustedFn, proxy bool) sessionWantSender {
 
 	ctx, cancel := context.WithCancel(context.Background())
 	sws := sessionWantSender{
@@ -131,6 +133,7 @@ func newSessionWantSender(sid uint64, pm PeerManager, spm SessionPeerManager, ca
 		bpm:              bpm,
 		onSend:           onSend,
 		onPeersExhausted: onPeersExhausted,
+		proxy:            proxy,
 	}
 
 	return sws
@@ -314,7 +317,7 @@ func (sws *sessionWantSender) processAvailability(availability map[peer.ID]bool)
 	var newlyUnavailable []peer.ID
 	for p, isNowAvailable := range availability {
 		stateChange := false
-		if isNowAvailable {
+		if isNowAvailable { // todo / maybe add the forwarded-haves here?
 			isNewPeer := sws.spm.AddPeer(p)
 			if isNewPeer {
 				stateChange = true
@@ -532,35 +535,35 @@ func (sws *sessionWantSender) sendNextWants(newlyAvailable []peer.ID) {
 	toSend := make(allWants)
 
 	for c, wi := range sws.wants {
-		// Ensure we send want-haves to any newly available peers
-		for _, p := range newlyAvailable {
-			toSend.forPeer(p).wantHaves.Add(c)
-		}
+		if sws.proxy {
+			// Ensure we send want-haves to any newly available peers
+			for _, p := range newlyAvailable {
+				toSend.forPeer(p).wantHaves.Add(c)
+			}
 
-		// We already sent a want-block to a peer and haven't yet received a
-		// response yet
-		if wi.sentTo != "" {
-			continue
-		}
-
-		// All the peers have indicated that they don't have the block
-		// corresponding to this want, so we must wait to discover more peers
-		if wi.bestPeer == "" {
-			// TODO: work this out in real time instead of using bestP?
-			continue
-		}
-
-		// Record that we are sending a want-block for this want to the peer
-		sws.setWantSentTo(c, wi.bestPeer)
-
-		// Send a want-block to the chosen peer
-		toSend.forPeer(wi.bestPeer).wantBlocks.Add(c)
-
-		// Send a want-have to each other peer
-		for _, op := range sws.spm.Peers() {
-			if op != wi.bestPeer {
+			// Send a want-have to each peer
+			for _, op := range sws.spm.Peers() {
 				toSend.forPeer(op).wantHaves.Add(c)
 			}
+		} else {
+			// We already sent a want-block to a peer and haven't yet received a
+			// response yet
+			if wi.sentTo != "" {
+				continue
+			}
+
+			// All the peers have indicated that they don't have the block
+			// corresponding to this want, so we must wait to discover more peers
+			if wi.bestPeer == "" {
+				// TODO: work this out in real time instead of using bestP?
+				continue
+			}
+
+			// Record that we are sending a want-block for this want to the peer
+			sws.setWantSentTo(c, wi.bestPeer)
+
+			// Send a want-block to the chosen peer
+			toSend.forPeer(wi.bestPeer).wantBlocks.Add(c)
 		}
 	}
 

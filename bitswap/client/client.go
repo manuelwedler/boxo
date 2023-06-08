@@ -136,8 +136,9 @@ func New(parent context.Context, network bsnet.BitSwapNetwork, bstore blockstore
 		provSearchDelay time.Duration,
 		rebroadcastDelay delay.D,
 		self peer.ID,
-		proxy bool) bssm.Session {
-		return bssession.New(sessctx, sessmgr, id, spm, pqm, sim, pm, bpm, notif, provSearchDelay, rebroadcastDelay, self, proxy)
+		proxy bool,
+		proxyDiscoveryCallback bsrm.ProxyDiscoveryCallback) bssm.Session {
+		return bssession.New(sessctx, sessmgr, id, spm, pqm, sim, pm, bpm, notif, provSearchDelay, rebroadcastDelay, self, proxy, proxyDiscoveryCallback)
 	}
 	sessionPeerManagerFactory := func(ctx context.Context, id uint64) bssession.SessionPeerManager {
 		return bsspm.New(id, network.ConnectionManager())
@@ -145,8 +146,8 @@ func New(parent context.Context, network bsnet.BitSwapNetwork, bstore blockstore
 	notif := notifications.New()
 	sm = bssm.New(ctx, sessionFactory, sim, sessionPeerManagerFactory, bpm, pm, notif, network.Self())
 
-	createProxySession := func(ctx context.Context) exchange.Fetcher {
-		return sm.NewProxySession(ctx, bs.provSearchDelay, bs.rebroadcastDelay)
+	createProxySession := func(ctx context.Context, proxyDiscoveryCallback bsrm.ProxyDiscoveryCallback) exchange.Fetcher {
+		return sm.NewProxySession(ctx, proxyDiscoveryCallback, bs.provSearchDelay, bs.rebroadcastDelay)
 	}
 
 	rm.Forwarder = pm
@@ -367,6 +368,7 @@ func (bs *Client) ReceiveMessage(ctx context.Context, p peer.ID, incoming bsmsg.
 		}
 	}
 
+	// TODO / Add ForwardHaves
 	haves := incoming.Haves()
 	dontHaves := incoming.DontHaves()
 	if len(iblocks) > 0 || len(haves) > 0 || len(dontHaves) > 0 {

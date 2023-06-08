@@ -26,7 +26,10 @@ type ForwardSender interface {
 }
 
 // CreateProxySession initializes a proxy session with the given context.
-type CreateProxySession func(ctx context.Context) exchange.Fetcher
+type CreateProxySession func(ctx context.Context, proxyDiscoveryCallback ProxyDiscoveryCallback) exchange.Fetcher
+
+// ProxyDiscoveryCallback is called when a proxy session discovers peers for a CID
+type ProxyDiscoveryCallback func(peer.ID, cid.Cid)
 
 type RelayManager struct {
 	Forwarder           ForwardSender
@@ -57,18 +60,19 @@ func (rm *RelayManager) ProcessForwards(ctx context.Context, kt *keyTracker) {
 	for _, c := range forwards {
 		rnd := rand.Float64()
 
-		cs := make([]cid.Cid, 0, 1)
-		cs = append(cs, c)
 		if rnd <= rm.proxyTransitionProb {
-			// TODO / Start proxy session
-			// TODO / what context?
-			// TODO / where to store? storing needed?
-			session := rm.CreateProxySession(ctx)
-			// Maybe implement as goroutine, channel would return peers who have the block.
-			// Then we directly send the FORWARD_HAVEs back in this place.
-			session.GetBlocks(ctx, cs)
+			proxyDiscoveryCallback := func(provider peer.ID, received cid.Cid) {
+				if received != c {
+					log.Debugf("[recv] cid not equal proxy cid; cid=%s, peer=%s, proxycid=%s", received, provider, c)
+					return
+				}
+				// todo / should be non-blocking
+				// TODO / send forward-have for c to kt.peer
+			}
+			session := rm.CreateProxySession(ctx, proxyDiscoveryCallback)
+			session.GetBlocks(ctx, []cid.Cid{c})
 		} else {
-			rm.Forwarder.ForwardWants(ctx, cs)
+			rm.Forwarder.ForwardWants(ctx, []cid.Cid{c})
 		}
 	}
 }
