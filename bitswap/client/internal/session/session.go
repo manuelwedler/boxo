@@ -536,6 +536,7 @@ func (s *Session) wantBlocks(ctx context.Context, newks []cid.Cid) {
 
 // Send want-forwards to one connected peer
 func (s *Session) forwardWants(ctx context.Context, wants []cid.Cid) {
+	log.Debugw("forwardWants", "session", s.id, "cids", wants)
 	for _, c := range wants {
 		s.stopUnforwardedSearchTimer(c)
 		forwardTimer := time.NewTimer(s.unforwardedSearchDelay)
@@ -550,10 +551,9 @@ func (s *Session) forwardWants(ctx context.Context, wants []cid.Cid) {
 				return
 			}
 		}(c)
-	}
 
-	log.Debugw("forwardWants", "session", s.id, "cids", wants)
-	s.pm.ForwardWants(ctx, wants)
+		s.pm.ForwardWants(ctx, []cid.Cid{c})
+	}
 }
 
 func (s *Session) stopUnforwardedSearchTimer(c cid.Cid) { // todo / also reset when forward-have is received

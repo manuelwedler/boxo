@@ -284,7 +284,7 @@ func (mq *MessageQueue) AddForwardWants(wantHaves []cid.Cid) {
 
 		// We're adding a want-have for the cid, so clear any pending cancel
 		// for the cid
-		mq.cancels.Remove(c)
+		mq.cancels.Remove(c) // todo /
 	}
 
 	// Schedule a message send
