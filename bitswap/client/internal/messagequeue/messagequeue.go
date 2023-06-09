@@ -512,12 +512,11 @@ func (mq *MessageQueue) transferRebroadcastWants() bool {
 	defer mq.wllock.Unlock()
 
 	// Check if there are any wants to rebroadcast
-	if mq.forwardWants.sent.Len() == 0 && mq.bcstWants.sent.Len() == 0 && mq.peerWants.sent.Len() == 0 {
+	if mq.bcstWants.sent.Len() == 0 && mq.peerWants.sent.Len() == 0 {
 		return false
 	}
 
 	// Copy sent wants into pending wants lists
-	mq.forwardWants.pending.Absorb(mq.forwardWants.sent)
 	mq.bcstWants.pending.Absorb(mq.bcstWants.sent)
 	mq.peerWants.pending.Absorb(mq.peerWants.sent)
 
