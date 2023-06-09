@@ -137,8 +137,9 @@ func New(parent context.Context, network bsnet.BitSwapNetwork, bstore blockstore
 		rebroadcastDelay delay.D,
 		self peer.ID,
 		proxy bool,
-		proxyDiscoveryCallback bsrm.ProxyDiscoveryCallback) bssm.Session {
-		return bssession.New(sessctx, sessmgr, id, spm, pqm, sim, pm, bpm, notif, provSearchDelay, rebroadcastDelay, self, proxy, proxyDiscoveryCallback)
+		proxyDiscoveryCallback bsrm.ProxyDiscoveryCallback,
+		unforwardedSearchDelay time.Duration) bssm.Session {
+		return bssession.New(sessctx, sessmgr, id, spm, pqm, sim, pm, bpm, notif, provSearchDelay, rebroadcastDelay, self, proxy, proxyDiscoveryCallback, unforwardedSearchDelay)
 	}
 	sessionPeerManagerFactory := func(ctx context.Context, id uint64) bssession.SessionPeerManager {
 		return bsspm.New(id, network.ConnectionManager())
@@ -147,7 +148,7 @@ func New(parent context.Context, network bsnet.BitSwapNetwork, bstore blockstore
 	sm = bssm.New(ctx, sessionFactory, sim, sessionPeerManagerFactory, bpm, pm, notif, network.Self())
 
 	createProxySession := func(ctx context.Context, proxyDiscoveryCallback bsrm.ProxyDiscoveryCallback) exchange.Fetcher {
-		return sm.NewProxySession(ctx, proxyDiscoveryCallback, bs.provSearchDelay, bs.rebroadcastDelay)
+		return sm.NewProxySession(ctx, proxyDiscoveryCallback, bs.provSearchDelay, bs.rebroadcastDelay, bs.unforwardedSearchDelay)
 	}
 
 	rm.Forwarder = pm
@@ -168,6 +169,7 @@ func New(parent context.Context, network bsnet.BitSwapNetwork, bstore blockstore
 		allMetric:                  bmetrics.AllHist(ctx),
 		provSearchDelay:            defaults.ProvSearchDelay,
 		rebroadcastDelay:           delay.Fixed(time.Minute),
+		unforwardedSearchDelay:     defaults.UnforwardedSearchDelay,
 		simulateDontHavesOnTimeout: true,
 	}
 
@@ -236,6 +238,10 @@ type Client struct {
 	// how often to rebroadcast providing requests to find more optimized providers
 	rebroadcastDelay delay.D
 
+	// how long to wait to consider a forward search as failed and search for
+	// providers through the ProviderQueryManager
+	unforwardedSearchDelay time.Duration
+
 	blockReceivedNotifier BlockReceivedNotifier
 
 	// whether we should actually simulate dont haves on request timeout
@@ -268,7 +274,7 @@ func (bs *Client) GetBlock(ctx context.Context, k cid.Cid) (blocks.Block, error)
 func (bs *Client) GetBlocks(ctx context.Context, keys []cid.Cid) (<-chan blocks.Block, error) {
 	ctx, span := internal.StartSpan(ctx, "GetBlocks", trace.WithAttributes(attribute.Int("NumKeys", len(keys))))
 	defer span.End()
-	session := bs.sm.NewSession(ctx, bs.provSearchDelay, bs.rebroadcastDelay)
+	session := bs.sm.NewSession(ctx, bs.provSearchDelay, bs.rebroadcastDelay, bs.unforwardedSearchDelay)
 	return session.GetBlocks(ctx, keys)
 }
 
@@ -489,5 +495,5 @@ func (bs *Client) IsOnline() bool {
 func (bs *Client) NewSession(ctx context.Context) exchange.Fetcher {
 	ctx, span := internal.StartSpan(ctx, "NewSession")
 	defer span.End()
-	return bs.sm.NewSession(ctx, bs.provSearchDelay, bs.rebroadcastDelay)
+	return bs.sm.NewSession(ctx, bs.provSearchDelay, bs.rebroadcastDelay, bs.unforwardedSearchDelay)
 }

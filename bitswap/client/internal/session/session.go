@@ -123,12 +123,14 @@ type Session struct {
 	tickDelayReqs chan time.Duration
 
 	// do not touch outside run loop
-	idleTick            *time.Timer
-	periodicSearchTimer *time.Timer
-	baseTickDelay       time.Duration
-	consecutiveTicks    int
-	initialSearchDelay  time.Duration
-	periodicSearchDelay delay.D
+	idleTick                *time.Timer
+	periodicSearchTimer     *time.Timer
+	baseTickDelay           time.Duration
+	consecutiveTicks        int
+	initialSearchDelay      time.Duration
+	periodicSearchDelay     delay.D
+	unforwardedSearchTimers map[cid.Cid]*time.Timer
+	unforwardedSearchDelay  time.Duration
 	// identifiers
 	notif notifications.PubSub
 	id    uint64
@@ -158,7 +160,8 @@ func New(
 	periodicSearchDelay delay.D,
 	self peer.ID,
 	proxy bool,
-	proxyDiscoveryCallback bsrm.ProxyDiscoveryCallback) *Session {
+	proxyDiscoveryCallback bsrm.ProxyDiscoveryCallback,
+	unforwardedSearchDelay time.Duration) *Session {
 
 	ctx, cancel := context.WithCancel(ctx)
 	s := &Session{
@@ -181,6 +184,7 @@ func New(
 		self:                   self,
 		proxy:                  proxy,
 		proxyDiscoveryCallback: proxyDiscoveryCallback,
+		unforwardedSearchDelay: unforwardedSearchDelay,
 	}
 	s.sws = newSessionWantSender(id, pm, sprm, sm, bpm, s.onWantsSent, s.onPeersExhausted, proxy)
 
@@ -213,7 +217,14 @@ func (s *Session) ReceiveFrom(from peer.ID, ks []cid.Cid, haves []cid.Cid, dontH
 		// Proxies ignore blocks, because they are only interested in haves.
 		s.sws.Update(from, []cid.Cid{}, haves, dontHaves)
 
+		uniqueHaves := cid.NewSet()
+		for _, c := range ks {
+			uniqueHaves.Add(c)
+		}
 		for _, c := range haves {
+			uniqueHaves.Add(c)
+		}
+		for _, c := range uniqueHaves.Keys() {
 			s.foundProvider(from, c)
 		}
 	} else {
@@ -450,6 +461,11 @@ func (s *Session) findMorePeers(ctx context.Context, c cid.Cid) {
 func (s *Session) handleShutdown() {
 	// Stop the idle timer
 	s.idleTick.Stop()
+
+	for c := range s.unforwardedSearchTimers {
+		s.stopUnforwardedSearchTimer(c)
+	}
+
 	// Shut down the session peer manager
 	s.sprm.Shutdown()
 	// Shut down the sessionWantSender (blocks until sessionWantSender stops
@@ -462,6 +478,9 @@ func (s *Session) handleShutdown() {
 
 // handleReceive is called when the session receives blocks from a peer
 func (s *Session) handleReceive(ks []cid.Cid) {
+	for _, k := range ks {
+		s.stopUnforwardedSearchTimer(k)
+	}
 	// Record which blocks have been received and figure out the total latency
 	// for fetching the blocks
 	wanted, totalLatency := s.sw.BlocksReceived(ks)
@@ -517,8 +536,31 @@ func (s *Session) wantBlocks(ctx context.Context, newks []cid.Cid) {
 
 // Send want-forwards to one connected peer
 func (s *Session) forwardWants(ctx context.Context, wants []cid.Cid) {
+	for _, c := range wants {
+		s.stopUnforwardedSearchTimer(c)
+		forwardTimer := time.NewTimer(s.unforwardedSearchDelay)
+		s.unforwardedSearchTimers[c] = forwardTimer
+		go func(k cid.Cid) {
+			select {
+			case <-forwardTimer.C:
+				s.stopUnforwardedSearchTimer(k)
+				s.findMorePeers(ctx, k)
+				return
+			case <-s.ctx.Done():
+				return
+			}
+		}(c)
+	}
+
 	log.Debugw("forwardWants", "session", s.id, "cids", wants)
 	s.pm.ForwardWants(ctx, wants)
+}
+
+func (s *Session) stopUnforwardedSearchTimer(c cid.Cid) { // todo / also reset when forward-have is received
+	if s.unforwardedSearchTimers[c] != nil {
+		s.unforwardedSearchTimers[c].Stop()
+		delete(s.unforwardedSearchTimers, c)
+	}
 }
 
 // Send want-haves to all connected peers
@@ -546,7 +588,7 @@ func (s *Session) resetIdleTick() {
 	s.idleTick.Reset(tickDelay)
 }
 
-// Used to notify relaymanage
+// Used to notify relaymanager
 func (s *Session) foundProvider(p peer.ID, c cid.Cid) {
 	if s.proxy {
 		s.proxyDiscoverySuccessful = true
