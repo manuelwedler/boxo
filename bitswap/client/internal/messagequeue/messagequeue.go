@@ -634,12 +634,6 @@ func (mq *MessageQueue) handleResponse(ks []cid.Cid) {
 	//   - peer A later receives the block from peer B
 	//   - peer A sends us HAVE / block
 	for _, c := range ks {
-		if at, ok := mq.forwardWants.sentAt[c]; ok {
-			if (earliest.IsZero() || at.Before(earliest)) && now.Sub(at) < mq.maxValidLatency {
-				earliest = at
-			}
-			mq.forwardWants.ClearSentAt(c)
-		}
 		if at, ok := mq.bcstWants.sentAt[c]; ok {
 			if (earliest.IsZero() || at.Before(earliest)) && now.Sub(at) < mq.maxValidLatency {
 				earliest = at
@@ -872,7 +866,7 @@ FINISH:
 			}
 		}
 
-		for _, e := range forwardEntries[:sentBcstEntries] {
+		for _, e := range forwardEntries[:sentForwardEntries] {
 			if e.Cid.Defined() { // Check if want was cancelled in the interim
 				mq.forwardWants.SentAt(e.Cid, now)
 			}
