@@ -90,7 +90,7 @@ func New(ctx context.Context, net network.BitSwapNetwork, bstore blockstore.Bloc
 
 	ctx = metrics.CtxSubScope(ctx, "bitswap")
 
-	rm := bsrm.NewRelayManager()
+	rm := bsrm.NewRelayManager(net.ConnectionManager(), net.Self())
 	bs.Server = server.New(ctx, net, bstore, rm, serverOptions...)
 	bs.Client = client.New(ctx, net, bstore, rm, append(clientOptions, client.WithBlockReceivedNotifier(bs.Server))...)
 	net.Start(bs) // use the polyfill receiver to log received errors and trace messages only once

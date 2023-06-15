@@ -2,6 +2,7 @@ package relaymanager
 
 import (
 	"context"
+	"fmt"
 	"math/rand"
 	"sync"
 	"time"
@@ -23,6 +24,8 @@ const (
 type ForwardSender interface {
 	// ForwardWants sends want-forwards to one connected peer
 	ForwardWants(context.Context, []cid.Cid)
+	// ForwardHaves sends forward-haves to a specified peer.
+	ForwardHaves(ctx context.Context, to peer.ID, have cid.Cid, peers []peer.ID)
 }
 
 // CreateProxySession initializes a proxy session with the given context.
@@ -31,14 +34,26 @@ type CreateProxySession func(ctx context.Context, proxyDiscoveryCallback ProxyDi
 // ProxyDiscoveryCallback is called when a proxy session discovers peers for a CID
 type ProxyDiscoveryCallback func(peer.ID, cid.Cid)
 
+// PeerTagger is an interface for tagging peers with metadata
+type PeerTagger interface {
+	Protect(peer.ID, string)
+	Unprotect(peer.ID, string) bool
+}
+
+func getConnectionProtectionTag(id cid.Cid) string {
+	return fmt.Sprint("bs-rel-", id)
+}
+
 type RelayManager struct {
 	Forwarder           ForwardSender
 	CreateProxySession  CreateProxySession
 	Ledger              *RelayLedger
 	proxyTransitionProb float64
+	peerTagger          PeerTagger
+	self                peer.ID
 }
 
-func NewRelayManager() *RelayManager {
+func NewRelayManager(peerTagger PeerTagger, self peer.ID) *RelayManager {
 	return &RelayManager{
 		Forwarder:          nil,
 		CreateProxySession: nil,
@@ -46,6 +61,8 @@ func NewRelayManager() *RelayManager {
 			r: make(map[cid.Cid]map[peer.ID]bool, 0),
 		},
 		proxyTransitionProb: defaultProxyPhaseTransitionProbability,
+		peerTagger:          peerTagger,
+		self:                self,
 	}
 }
 
@@ -58,23 +75,31 @@ func (rm *RelayManager) ProcessForwards(ctx context.Context, kt *keyTracker) {
 
 	rand.Seed(time.Now().UnixNano())
 	for _, c := range forwards {
-		rnd := rand.Float64()
+		rm.peerTagger.Protect(kt.Peer, getConnectionProtectionTag(c))
 
+		rnd := rand.Float64()
 		if rnd <= rm.proxyTransitionProb {
 			proxyDiscoveryCallback := func(provider peer.ID, received cid.Cid) {
 				if received != c {
 					log.Debugf("[recv] cid not equal proxy cid; cid=%s, peer=%s, proxycid=%s", received, provider, c)
 					return
 				}
-				// todo / should be non-blocking
-				// TODO / send forward-have for c to kt.peer
+				rm.RelayHaves(ctx, kt.Peer, c, []peer.ID{provider})
 			}
+
 			session := rm.CreateProxySession(ctx, proxyDiscoveryCallback)
 			session.GetBlocks(ctx, []cid.Cid{c})
 		} else {
 			rm.Forwarder.ForwardWants(ctx, []cid.Cid{c})
 		}
 	}
+}
+
+func (rm *RelayManager) RelayHaves(ctx context.Context, to peer.ID, have cid.Cid, peers []peer.ID) {
+	rm.Forwarder.ForwardHaves(ctx, to, have, peers)
+	// For now, we just unprotect the connection when the first response is sent.
+	// As later responses could be pruned, a more sophisticated approach might be worth it.
+	rm.peerTagger.Unprotect(to, getConnectionProtectionTag(have))
 }
 
 type RelayLedger struct {

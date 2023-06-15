@@ -488,20 +488,7 @@ func (m *impl) Size() int {
 		size += BlockPresenceSize(c)
 	}
 	for c := range m.blockPresencesPeers {
-		peers := make([][]byte, 0, len(m.blockPresencesPeers[c]))
-		ps := m.blockPresencesPeers[c]
-		for _, p := range ps {
-			mp, err := p.MarshalBinary()
-			if err == nil {
-				peers = append(peers, mp)
-			}
-		}
-		presence := &pb.Message_BlockPresence{
-			Cid:     pb.Cid{Cid: c},
-			Type:    pb.Message_ForwardHave,
-			PeerIds: peers,
-		}
-		size += presence.Size()
+		size += BlockPresenceForwardSize(c, m.blockPresencesPeers[c])
 	}
 	for _, e := range m.wantlist {
 		size += e.Size()
@@ -518,6 +505,22 @@ func BlockPresenceSize(c cid.Cid) int {
 		Cid:  pb.Cid{Cid: c},
 		Type: pb.Message_Have,
 	}).Size()
+}
+
+func BlockPresenceForwardSize(c cid.Cid, ps []peer.ID) int {
+	peers := make([][]byte, 0, len(ps))
+	for _, p := range ps {
+		mp, err := p.MarshalBinary()
+		if err == nil {
+			peers = append(peers, mp)
+		}
+	}
+	presence := &pb.Message_BlockPresence{
+		Cid:     pb.Cid{Cid: c},
+		Type:    pb.Message_ForwardHave,
+		PeerIds: peers,
+	}
+	return presence.Size()
 }
 
 // FromNet generates a new BitswapMessage from incoming data on an io.Reader.

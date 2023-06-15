@@ -16,6 +16,7 @@ var log = logging.Logger("bs:peermgr")
 // PeerQueue provides a queue of messages to be sent for a single peer.
 type PeerQueue interface {
 	AddForwardWants([]cid.Cid)
+	AddForwardHaves(to peer.ID, have cid.Cid, peers []peer.ID)
 	AddBroadcastWantHaves([]cid.Cid)
 	AddWants([]cid.Cid, []cid.Cid)
 	AddCancels([]cid.Cid)
@@ -138,6 +139,14 @@ func (pm *PeerManager) ForwardWants(ctx context.Context, wantHaves []cid.Cid) {
 	defer pm.pqLk.Unlock()
 
 	pm.pwm.forwardWants(wantHaves)
+}
+
+// ForwardHaves sends forward-haves to a specified peer.
+func (pm *PeerManager) ForwardHaves(ctx context.Context, to peer.ID, have cid.Cid, peers []peer.ID) {
+	pm.pqLk.Lock()
+	defer pm.pqLk.Unlock()
+
+	pm.pwm.forwardHaves(to, have, peers)
 }
 
 // BroadcastWantHaves broadcasts want-haves to all peers (used by the session

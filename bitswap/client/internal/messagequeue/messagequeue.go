@@ -90,6 +90,8 @@ type MessageQueue struct {
 	cancels      *cid.Set
 	priority     int32
 
+	forwardHaves map[cid.Cid][]peer.ID
+
 	// Dont touch any of these variables outside of run loop
 	sender                bsnet.MessageSender
 	rebroadcastIntervalLk sync.RWMutex
@@ -252,6 +254,7 @@ func newMessageQueue(
 		dhTimeoutMgr:        dhTimeoutMgr,
 		maxMessageSize:      maxMsgSize,
 		forwardWants:        newRecallWantList(),
+		forwardHaves:        make(map[cid.Cid][]peer.ID),
 		bcstWants:           newRecallWantList(),
 		peerWants:           newRecallWantList(),
 		cancels:             cid.NewSet(),
@@ -286,6 +289,20 @@ func (mq *MessageQueue) AddForwardWants(wantHaves []cid.Cid) {
 		// for the cid
 		mq.cancels.Remove(c) // todo /
 	}
+
+	// Schedule a message send
+	mq.signalWorkReady()
+}
+
+// Add forward-haves
+func (mq *MessageQueue) AddForwardHaves(to peer.ID, have cid.Cid, peers []peer.ID) {
+	mq.wllock.Lock()
+	defer mq.wllock.Unlock()
+
+	if mq.forwardHaves[have] == nil {
+		mq.forwardHaves[have] = make([]peer.ID, 0, len(peers))
+	}
+	mq.forwardHaves[have] = append(mq.forwardHaves[have], peers...)
 
 	// Schedule a message send
 	mq.signalWorkReady()
@@ -723,7 +740,7 @@ func (mq *MessageQueue) pendingWorkCount() int {
 	mq.wllock.Lock()
 	defer mq.wllock.Unlock()
 
-	return mq.forwardWants.pending.Len() + mq.bcstWants.pending.Len() + mq.peerWants.pending.Len() + mq.cancels.Len()
+	return mq.forwardWants.pending.Len() + mq.bcstWants.pending.Len() + mq.peerWants.pending.Len() + mq.cancels.Len() + len(mq.forwardHaves)
 }
 
 // Convert the lists of wants into a Bitswap message
@@ -810,6 +827,17 @@ func (mq *MessageQueue) extractOutgoingMessage(supportsHave bool) (bsmsg.BitSwap
 
 		msgSize += mq.msg.AddEntry(e.Cid, e.Priority, wantType, false)
 		sentBcstEntries++
+
+		if msgSize >= mq.maxMessageSize {
+			goto FINISH
+		}
+	}
+
+	// Add each forward-have to the message
+	for c, peers := range mq.forwardHaves {
+		mq.msg.AddForwardHave(c, peers)
+		msgSize += bsmsg.BlockPresenceForwardSize(c, peers)
+		delete(mq.forwardHaves, c)
 
 		if msgSize >= mq.maxMessageSize {
 			goto FINISH

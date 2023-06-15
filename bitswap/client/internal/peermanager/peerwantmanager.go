@@ -138,6 +138,15 @@ func (pwm *peerWantManager) forwardWants(wantHaves []cid.Cid) {
 	pwm.peerWants[p].peerQueue.AddForwardWants(wantHaves)
 }
 
+// forwardHaves sends forward-haves to a specified peer.
+func (pwm *peerWantManager) forwardHaves(to peer.ID, have cid.Cid, peers []peer.ID) {
+	if _, ok := pwm.peerWants[to]; ok {
+		pwm.peerWants[to].peerQueue.AddForwardHaves(to, have, peers)
+	} else {
+		log.Errorf("forwardHaves() called with peer %s but peer not found in peerWantManager", string(to))
+	}
+}
+
 // broadcastWantHaves sends want-haves to any peers that have not yet been sent them.
 func (pwm *peerWantManager) broadcastWantHaves(wantHaves []cid.Cid) {
 	unsent := make([]cid.Cid, 0, len(wantHaves))
