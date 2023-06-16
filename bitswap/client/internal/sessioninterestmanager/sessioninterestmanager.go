@@ -250,6 +250,12 @@ func (sim *SessionInterestManager) ForwardInterestedSessions(forwardHaves []cid.
 		}
 	}
 
+	// Add any the sessions that are interested without forwarding
+	noForwardSes := sim.InterestedSessions([]cid.Cid{}, forwardHaves, []cid.Cid{})
+	for _, s := range noForwardSes {
+		sesSet[s] = struct{}{}
+	}
+
 	// Convert the set into a list
 	ses := make([]uint64, 0, len(sesSet))
 	for s := range sesSet {
