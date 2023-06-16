@@ -317,7 +317,7 @@ func (sws *sessionWantSender) processAvailability(availability map[peer.ID]bool)
 	var newlyUnavailable []peer.ID
 	for p, isNowAvailable := range availability {
 		stateChange := false
-		if isNowAvailable { // todo / maybe add the forwarded-haves here?
+		if isNowAvailable {
 			isNewPeer := sws.spm.AddPeer(p)
 			if isNewPeer {
 				stateChange = true

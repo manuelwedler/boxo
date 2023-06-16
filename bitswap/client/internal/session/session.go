@@ -537,6 +537,9 @@ func (s *Session) wantBlocks(ctx context.Context, newks []cid.Cid) {
 // Send want-forwards to one connected peer
 func (s *Session) forwardWants(ctx context.Context, wants []cid.Cid) {
 	log.Debugw("forwardWants", "session", s.id, "cids", wants)
+
+	s.sim.RecordSessionForwardInterest(s.id, wants)
+
 	for _, c := range wants {
 		s.stopUnforwardedSearchTimer(c)
 		forwardTimer := time.NewTimer(s.unforwardedSearchDelay)

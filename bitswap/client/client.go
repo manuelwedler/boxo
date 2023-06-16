@@ -309,7 +309,7 @@ func (bs *Client) NotifyNewBlocks(ctx context.Context, blks ...blocks.Block) err
 }
 
 // receiveBlocksFrom process blocks received from the network
-func (bs *Client) receiveBlocksFrom(ctx context.Context, from peer.ID, blks []blocks.Block, haves []cid.Cid, dontHaves []cid.Cid) error {
+func (bs *Client) receiveBlocksFrom(ctx context.Context, from peer.ID, blks []blocks.Block, haves []cid.Cid, dontHaves []cid.Cid, forwardHaves map[cid.Cid][]peer.ID) error {
 	select {
 	case <-bs.process.Closing():
 		return errors.New("bitswap is closed")
@@ -331,10 +331,14 @@ func (bs *Client) receiveBlocksFrom(ctx context.Context, from peer.ID, blks []bl
 	combined = append(combined, allKs...)
 	combined = append(combined, haves...)
 	combined = append(combined, dontHaves...)
+	// Just used for latency measurement
 	bs.pm.ResponseReceived(from, combined)
 
 	// Send all block keys (including duplicates) to any sessions that want them for accounting purpose.
-	bs.sm.ReceiveFrom(ctx, from, allKs, haves, dontHaves)
+	bs.sm.ReceiveFrom(ctx, from, allKs, haves, dontHaves, forwardHaves)
+
+	// Relay forward-haves to any interested peers
+	bs.rm.ProcessForwardHaves(ctx, forwardHaves)
 
 	if bs.blockReceivedNotifier != nil {
 		bs.blockReceivedNotifier.ReceivedBlocks(from, wanted)
@@ -374,12 +378,12 @@ func (bs *Client) ReceiveMessage(ctx context.Context, p peer.ID, incoming bsmsg.
 		}
 	}
 
-	// TODO / Add ForwardHaves
 	haves := incoming.Haves()
 	dontHaves := incoming.DontHaves()
-	if len(iblocks) > 0 || len(haves) > 0 || len(dontHaves) > 0 {
+	forwardHaves := incoming.ForwardHaves()
+	if len(iblocks) > 0 || len(haves) > 0 || len(dontHaves) > 0 || len(forwardHaves) > 0 {
 		// Process blocks
-		err := bs.receiveBlocksFrom(ctx, p, iblocks, haves, dontHaves)
+		err := bs.receiveBlocksFrom(ctx, p, iblocks, haves, dontHaves, forwardHaves)
 		if err != nil {
 			log.Warnf("ReceiveMessage recvBlockFrom error: %s", err)
 			return

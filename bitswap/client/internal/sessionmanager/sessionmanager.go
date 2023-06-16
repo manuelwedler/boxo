@@ -181,9 +181,41 @@ func (sm *SessionManager) GetNextSessionID() uint64 {
 }
 
 // ReceiveFrom is called when a new message is received
-func (sm *SessionManager) ReceiveFrom(ctx context.Context, p peer.ID, blks []cid.Cid, haves []cid.Cid, dontHaves []cid.Cid) {
+func (sm *SessionManager) ReceiveFrom(ctx context.Context, p peer.ID, blks []cid.Cid, haves []cid.Cid, dontHaves []cid.Cid, forwardHaves map[cid.Cid][]peer.ID) {
 	// Record block presence for HAVE / DONT_HAVE
 	sm.blockPresenceManager.ReceiveFrom(p, haves, dontHaves)
+
+	forwardCids := make([]cid.Cid, 0, len(forwardHaves))
+
+	for c, forwardedPeers := range forwardHaves {
+		forwardCids = append(forwardCids, c)
+
+		for _, forwardPeer := range forwardedPeers {
+			// todo / move into goroutine and call connect to peer before
+			sm.blockPresenceManager.ReceiveFrom(forwardPeer, []cid.Cid{c}, []cid.Cid{})
+		}
+	}
+
+	// Notify each session that is interested in the FORWARD_HAVEs
+	for _, id := range sm.sessionInterestManager.ForwardInterestedSessions(forwardCids) {
+		sm.sessLk.RLock()
+		if sm.sessions == nil { // check if SessionManager was shutdown
+			sm.sessLk.RUnlock()
+			return
+		}
+		sess, ok := sm.sessions[id]
+		sm.sessLk.RUnlock()
+
+		if !ok {
+			continue
+		}
+
+		for c, forwardedPeers := range forwardHaves {
+			for _, forwardPeer := range forwardedPeers {
+				sess.ReceiveFrom(forwardPeer, []cid.Cid{}, []cid.Cid{c}, []cid.Cid{})
+			}
+		}
+	}
 
 	// Notify each session that is interested in the blocks / HAVEs / DONT_HAVEs
 	for _, id := range sm.sessionInterestManager.InterestedSessions(blks, haves, dontHaves) {

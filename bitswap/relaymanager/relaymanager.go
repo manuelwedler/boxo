@@ -58,7 +58,7 @@ func NewRelayManager(peerTagger PeerTagger, self peer.ID) *RelayManager {
 		Forwarder:          nil,
 		CreateProxySession: nil,
 		Ledger: &RelayLedger{
-			r: make(map[cid.Cid]map[peer.ID]bool, 0),
+			items: make(map[cid.Cid]map[peer.ID]bool, 0),
 		},
 		proxyTransitionProb: defaultProxyPhaseTransitionProbability,
 		peerTagger:          peerTagger,
@@ -95,6 +95,16 @@ func (rm *RelayManager) ProcessForwards(ctx context.Context, kt *keyTracker) {
 	}
 }
 
+// ProcessForwardHaves relays the forward-haves to all interested peers in the ledger
+func (rm *RelayManager) ProcessForwardHaves(ctx context.Context, forwardHaves map[cid.Cid][]peer.ID) {
+	for c, ps := range forwardHaves {
+		interested := rm.Ledger.InterestedPeers(c)
+		for _, to := range interested {
+			rm.RelayHaves(ctx, to, c, ps)
+		}
+	}
+}
+
 func (rm *RelayManager) RelayHaves(ctx context.Context, to peer.ID, have cid.Cid, peers []peer.ID) {
 	rm.Forwarder.ForwardHaves(ctx, to, have, peers)
 	// For now, we just unprotect the connection when the first response is sent.
@@ -103,8 +113,8 @@ func (rm *RelayManager) RelayHaves(ctx context.Context, to peer.ID, have cid.Cid
 }
 
 type RelayLedger struct {
-	r  map[cid.Cid]map[peer.ID]bool
-	lk sync.RWMutex
+	items map[cid.Cid]map[peer.ID]bool
+	lk    sync.RWMutex
 }
 
 // BlockSeen removes interest in relayManager if a peer interested have sent
@@ -119,9 +129,9 @@ func (rl *RelayLedger) RemoveInterest(c cid.Cid, p peer.ID) {
 	rl.lk.Lock()
 	defer rl.lk.Unlock()
 
-	delete(rl.r[c], p)
-	if len(rl.r[c]) == 0 {
-		delete(rl.r, c)
+	delete(rl.items[c], p)
+	if len(rl.items[c]) == 0 {
+		delete(rl.items, c)
 	}
 }
 
@@ -130,22 +140,24 @@ func (rl *RelayLedger) Update(kt *keyTracker) {
 	defer rl.lk.Unlock()
 
 	for _, c := range kt.T {
-		if rl.r[c] == nil {
+		if rl.items[c] == nil {
 			// Add to the registry
-			rl.r[c] = make(map[peer.ID]bool, 1)
+			rl.items[c] = make(map[peer.ID]bool, 1)
 		}
-		rl.r[c][kt.Peer] = true
+		rl.items[c][kt.Peer] = true
 	}
 }
 
 // InterestedPeers returns peer looking for a cid.
-func (rl *RelayLedger) InterestedPeers(c cid.Cid) map[peer.ID]bool {
+func (rl *RelayLedger) InterestedPeers(c cid.Cid) []peer.ID {
 	rl.lk.RLock()
 	defer rl.lk.RUnlock()
 	// Create brand new map to avoid data races.
-	res := make(map[peer.ID]bool)
-	for k, v := range rl.r[c] {
-		res[k] = v
+	res := make([]peer.ID, 0, len(rl.items[c]))
+	for p, ok := range rl.items[c] {
+		if ok {
+			res = append(res, p)
+		}
 	}
 	return res
 }

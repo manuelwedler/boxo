@@ -10,8 +10,9 @@ import (
 
 // SessionInterestManager records the CIDs that each session is interested in.
 type SessionInterestManager struct {
-	lk    sync.RWMutex
-	wants map[cid.Cid]map[uint64]bool
+	lk           sync.RWMutex
+	wants        map[cid.Cid]map[uint64]bool
+	forwardWants map[cid.Cid]map[uint64]bool
 }
 
 // New initializes a new SessionInterestManager.
@@ -26,6 +27,13 @@ func New() *SessionInterestManager {
 		// the block, but still wants to receive messages from peers who have
 		// the block as they may have other blocks the session is interested in.
 		wants: make(map[cid.Cid]map[uint64]bool),
+
+		// We separate the forwards as forward-haves might be received after
+		// a block was received for the cid. We still want to include these
+		// forward-haves as the peers might have the other relevant blocks
+		// of that the session is interested in.
+		// The interest should only be removed when the session is completed.
+		forwardWants: make(map[cid.Cid]map[uint64]bool),
 	}
 }
 
@@ -42,6 +50,23 @@ func (sim *SessionInterestManager) RecordSessionInterest(ses uint64, ks []cid.Ci
 			want[ses] = true
 		} else {
 			sim.wants[c] = map[uint64]bool{ses: true}
+		}
+	}
+}
+
+// When the client sends a forward-want, the session calls
+// RecordSessionForwardInterest() with those cids.
+func (sim *SessionInterestManager) RecordSessionForwardInterest(ses uint64, ks []cid.Cid) {
+	sim.lk.Lock()
+	defer sim.lk.Unlock()
+
+	// For each key
+	for _, c := range ks {
+		// Record that the session wants the blocks
+		if want, ok := sim.forwardWants[c]; ok {
+			want[ses] = true
+		} else {
+			sim.forwardWants[c] = map[uint64]bool{ses: true}
 		}
 	}
 }
@@ -66,6 +91,15 @@ func (sim *SessionInterestManager) RemoveSession(ses uint64) []cid.Cid {
 			delete(sim.wants, c)
 			// Add the key to the list of keys that no session is interested in
 			deletedKs = append(deletedKs, c)
+		}
+	}
+
+	for c := range sim.forwardWants {
+		delete(sim.forwardWants[c], ses)
+
+		if len(sim.forwardWants[c]) == 0 {
+			delete(sim.forwardWants, c)
+			// todo / cancel feature might need to return the removed cids here
 		}
 	}
 
@@ -133,6 +167,8 @@ func (sim *SessionInterestManager) FilterSessionInterested(ses uint64, ksets ...
 			// If there is a session that's interested, add the key to the set
 			if _, ok := sim.wants[c][ses]; ok {
 				has = append(has, c)
+			} else if _, ok := sim.forwardWants[c][ses]; ok {
+				has = append(has, c)
 			}
 		}
 		kres[i] = has
@@ -188,6 +224,28 @@ func (sim *SessionInterestManager) InterestedSessions(blks []cid.Cid, haves []ci
 	sesSet := make(map[uint64]struct{})
 	for _, c := range ks {
 		for s := range sim.wants[c] {
+			sesSet[s] = struct{}{}
+		}
+	}
+
+	// Convert the set into a list
+	ses := make([]uint64, 0, len(sesSet))
+	for s := range sesSet {
+		ses = append(ses, s)
+	}
+	return ses
+}
+
+// When the SessionManager receives a message it calls ForwardInterestedSessions() to
+// find out which sessions are interested in the message.
+func (sim *SessionInterestManager) ForwardInterestedSessions(forwardHaves []cid.Cid) []uint64 {
+	sim.lk.RLock()
+	defer sim.lk.RUnlock()
+
+	// Create a set of sessions that are interested in the keys
+	sesSet := make(map[uint64]struct{})
+	for _, c := range forwardHaves {
+		for s := range sim.forwardWants[c] {
 			sesSet[s] = struct{}{}
 		}
 	}
