@@ -191,7 +191,6 @@ func (sm *SessionManager) ReceiveFrom(ctx context.Context, p peer.ID, blks []cid
 		forwardCids = append(forwardCids, c)
 
 		for _, forwardPeer := range forwardedPeers {
-			// todo / move into goroutine and call connect to peer before
 			sm.blockPresenceManager.ReceiveFrom(forwardPeer, []cid.Cid{c}, []cid.Cid{})
 		}
 	}

@@ -100,6 +100,11 @@ func New(ctx context.Context, network ProviderQueryNetwork) *ProviderQueryManage
 	}
 }
 
+// Allow session to connect to peer
+func (pqm *ProviderQueryManager) ConnectTo(ctx context.Context, p peer.ID) error {
+	return pqm.network.ConnectTo(ctx, p)
+}
+
 // Startup starts processing for the ProviderQueryManager.
 func (pqm *ProviderQueryManager) Startup() {
 	go pqm.run()

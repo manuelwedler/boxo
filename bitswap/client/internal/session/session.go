@@ -77,6 +77,8 @@ type SessionPeerManager interface {
 type ProviderFinder interface {
 	// FindProvidersAsync searches for peers that provide the given CID
 	FindProvidersAsync(ctx context.Context, k cid.Cid) <-chan peer.ID
+	// Allow session to connect to peer
+	ConnectTo(ctx context.Context, p peer.ID) error
 }
 
 // opType is the kind of operation that is being processed by the event loop
@@ -228,8 +230,16 @@ func (s *Session) ReceiveFrom(from peer.ID, ks []cid.Cid, haves []cid.Cid, dontH
 			s.foundProvider(from, c)
 		}
 	} else {
-		// Inform the session want sender that a message has been received
-		s.sws.Update(from, ks, haves, dontHaves)
+		go func() {
+			// For forward-have messages we might not be connected to the peer yet
+			err := s.providerFinder.ConnectTo(s.ctx, from)
+			if err != nil {
+				log.Debugf("[ReceiveFrom] failed to connect to provider %s: %s", from, err)
+				return
+			}
+			// Inform the session want sender that a message has been received
+			s.sws.Update(from, ks, haves, dontHaves)
+		}()
 	}
 
 	if len(ks) == 0 {
