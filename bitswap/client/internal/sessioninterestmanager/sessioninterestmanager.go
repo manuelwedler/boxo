@@ -99,7 +99,6 @@ func (sim *SessionInterestManager) RemoveSession(ses uint64) []cid.Cid {
 
 		if len(sim.forwardWants[c]) == 0 {
 			delete(sim.forwardWants, c)
-			// todo / cancel feature might need to return the removed cids here
 		}
 	}
 

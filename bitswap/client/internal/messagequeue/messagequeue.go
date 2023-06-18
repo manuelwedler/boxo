@@ -284,10 +284,6 @@ func (mq *MessageQueue) AddForwardWants(wantHaves []cid.Cid) {
 	for _, c := range wantHaves {
 		mq.forwardWants.Add(c, mq.priority, pb.Message_Wantlist_Forward)
 		mq.priority--
-
-		// We're adding a want-have for the cid, so clear any pending cancel
-		// for the cid
-		mq.cancels.Remove(c) // todo /
 	}
 
 	// Schedule a message send
@@ -375,8 +371,6 @@ func (mq *MessageQueue) AddCancels(cancelKs []cid.Cid) {
 
 	// Remove keys from broadcast and peer wants, and add to cancels
 	for _, c := range cancelKs {
-		// TODO / cancel feature: removing want-forwards would be a problem,
-		// TODO / because we are not looking for a block but peers having the block.
 		// Check if a want for the key was sent
 		_, wasSentBcst := mq.bcstWants.sent.Contains(c)
 		_, wasSentPeer := mq.peerWants.sent.Contains(c)
@@ -687,7 +681,7 @@ func (mq *MessageQueue) logOutgoingMessage(wantlist []bsmsg.Entry) {
 
 	self := mq.network.Self()
 	for _, e := range wantlist {
-		if e.Cancel { // TODO / cancel forward feature.
+		if e.Cancel {
 			if e.WantType == pb.Message_Wantlist_Have {
 				log.Debugw("sent message",
 					"type", "CANCEL_WANT_HAVE",
@@ -695,9 +689,16 @@ func (mq *MessageQueue) logOutgoingMessage(wantlist []bsmsg.Entry) {
 					"local", self,
 					"to", mq.p,
 				)
-			} else {
+			} else if e.WantType == pb.Message_Wantlist_Block {
 				log.Debugw("sent message",
 					"type", "CANCEL_WANT_BLOCK",
+					"cid", e.Cid,
+					"local", self,
+					"to", mq.p,
+				)
+			} else {
+				log.Debugw("sent message",
+					"type", "CANCEL_WANT_FORWARD",
 					"cid", e.Cid,
 					"local", self,
 					"to", mq.p,

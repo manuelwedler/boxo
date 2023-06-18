@@ -770,12 +770,6 @@ func (e *Engine) MessageReceived(ctx context.Context, p peer.ID, m bsmsg.BitSwap
 			e.peerRequestQueue.Remove(entry.Cid, p)
 		}
 	}
-	// TODO / maybe implement cancel for relay session as above [cancel weiterleiten (see todo markdown)]
-	// if e.relaySession.Session != nil {
-	// 	log.Debugf("local: %v Removing cid %v for %v from relay session registry due to a cancel", e.self, entry.Cid, p)
-	// 	e.relaySession.RemoveInterest(entry.Cid, p)
-	//
-	// }
 	e.lock.Unlock()
 
 	var activeEntries []peertask.Task

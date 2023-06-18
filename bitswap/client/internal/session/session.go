@@ -230,6 +230,11 @@ func (s *Session) ReceiveFrom(from peer.ID, ks []cid.Cid, haves []cid.Cid, dontH
 			s.foundProvider(from, c)
 		}
 	} else {
+		for _, c := range haves {
+			// We received a response from the want-forward,
+			// we can stop the timer.
+			s.stopUnforwardedSearchTimer(c)
+		}
 		go func() {
 			// For forward-have messages we might not be connected to the peer yet
 			err := s.providerFinder.ConnectTo(s.ctx, from)
@@ -361,7 +366,7 @@ func (s *Session) run(ctx context.Context) {
 			case opWant:
 				// Client wants blocks
 				s.wantBlocks(ctx, oper.keys)
-			case opCancel: // TODO / Cancel gets forwarded to correct peer? Would need to store where WANT gets sent to
+			case opCancel:
 				// Wants were cancelled
 				s.sw.CancelPending(oper.keys)
 				s.sws.Cancel(oper.keys)
@@ -569,7 +574,7 @@ func (s *Session) forwardWants(ctx context.Context, wants []cid.Cid) {
 	}
 }
 
-func (s *Session) stopUnforwardedSearchTimer(c cid.Cid) { // todo / also reset when forward-have is received
+func (s *Session) stopUnforwardedSearchTimer(c cid.Cid) {
 	if s.unforwardedSearchTimers[c] != nil {
 		s.unforwardedSearchTimers[c].Stop()
 		delete(s.unforwardedSearchTimers, c)
