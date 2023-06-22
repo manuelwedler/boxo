@@ -13,9 +13,10 @@ import (
 )
 
 const (
-	protectionTag            = "bs-fgw"
-	reconstructGraphDelay    = time.Minute * 9  // todo / what makes sense?
-	initialConstructionDelay = time.Second * 10 // todo / evaluate different values here
+	protectionTag         = "bs-fgw"
+	reconstructGraphDelay = time.Second * 4
+	// Only makes sense with reconstructGraphDelay in the order of 10 minutes
+	// initialConstructionDelay = time.Second * 10
 )
 
 // PeerTagger is an interface for tagging peers with metadata
@@ -69,7 +70,7 @@ func newForwardGraphManager(
 }
 
 func (fgm *forwardGraphManager) run(ctx context.Context) {
-	fgm.reconstructGraphTimer = time.NewTimer(initialConstructionDelay)
+	fgm.reconstructGraphTimer = time.NewTimer(reconstructGraphDelay)
 
 	for {
 		select {
