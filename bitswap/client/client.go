@@ -112,7 +112,7 @@ func New(parent context.Context, network bsnet.BitSwapNetwork, bstore blockstore
 	onDontHaveTimeout := func(p peer.ID, dontHaves []cid.Cid) {
 		// Simulate a message arriving with DONT_HAVEs
 		if bs.simulateDontHavesOnTimeout {
-			sm.ReceiveFrom(ctx, p, nil, nil, dontHaves)
+			sm.ReceiveFrom(ctx, p, nil, nil, dontHaves, nil)
 		}
 	}
 	peerQueueFactory := func(ctx context.Context, p peer.ID) bspm.PeerQueue {
@@ -298,7 +298,7 @@ func (bs *Client) NotifyNewBlocks(ctx context.Context, blks ...blocks.Block) err
 
 	// Send all block keys (including duplicates) to any sessions that want them.
 	// (The duplicates are needed by sessions for accounting purposes)
-	bs.sm.ReceiveFrom(ctx, "", blkCids, nil, nil)
+	bs.sm.ReceiveFrom(ctx, "", blkCids, nil, nil, nil)
 
 	// Publish the block to any Bitswap clients that had requested blocks.
 	// (the sessions use this pubsub mechanism to inform clients of incoming
