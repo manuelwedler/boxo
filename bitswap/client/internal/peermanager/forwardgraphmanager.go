@@ -7,8 +7,8 @@ import (
 	"sync"
 	"time"
 
+	fs "github.com/ipfs/boxo/bitswap/forwardstrategy"
 	"github.com/ipfs/go-cid"
-	qpeerset "github.com/libp2p/go-libp2p-kad-dht/qpeerset"
 	peer "github.com/libp2p/go-libp2p/core/peer"
 )
 
@@ -35,7 +35,7 @@ type forwardGraphManager struct {
 	degree uint64
 
 	// Strategy to select a successor when forwarding.
-	strategy ForwardStrategy
+	strategy fs.ForwardStrategy
 
 	// Set of all connected peers
 	connectedPeers map[peer.ID]struct{}
@@ -54,7 +54,7 @@ type forwardGraphManager struct {
 func newForwardGraphManager(
 	ctx context.Context,
 	degree uint64,
-	forwardStrategy ForwardStrategy,
+	forwardStrategy fs.ForwardStrategy,
 	peerTagger PeerTagger) *forwardGraphManager {
 	fgm := &forwardGraphManager{
 		degree:         degree,
@@ -103,7 +103,7 @@ func (fgm *forwardGraphManager) GetSuccessorByStrategy(c cid.Cid) peer.ID {
 		successors = fgm.successors
 	}
 
-	return fgm.strategy.selectPeer(successors, c)
+	return fgm.strategy.SelectPeer(successors, c)
 }
 
 // Replaces all successors with newly chosen ones.
@@ -186,52 +186,4 @@ func (fgm *forwardGraphManager) addSuccessor(p peer.ID) {
 func (fgm *forwardGraphManager) removeSuccessor(p peer.ID) {
 	fgm.peerTagger.Unprotect(p, protectionTag)
 	delete(fgm.successors, p)
-}
-
-// Interface for implementing different forwarding strategies.
-type ForwardStrategy interface {
-	// Selects one peer of the set according to the strategy.
-	selectPeer(peers map[peer.ID]struct{}, c cid.Cid) peer.ID
-}
-
-type RandomForward struct{}
-
-func NewRandomForward() *RandomForward {
-	return &RandomForward{}
-}
-
-func (rf *RandomForward) selectPeer(peers map[peer.ID]struct{}, c cid.Cid) peer.ID {
-	rand.Seed(time.Now().UnixNano())
-	perm := rand.Perm(len(peers))
-
-	available := make([]peer.ID, 0, len(peers))
-	for p := range peers {
-		available = append(available, p)
-	}
-
-	if len(available) == 0 {
-		return peer.ID("")
-	}
-
-	return available[perm[0]]
-}
-
-type CloseCidForward struct{}
-
-func NewCloseCidForward() *CloseCidForward {
-	return &CloseCidForward{}
-}
-
-func (ccf *CloseCidForward) selectPeer(peers map[peer.ID]struct{}, c cid.Cid) peer.ID {
-	set := qpeerset.NewQueryPeerset(c.String())
-	for p := range peers {
-		set.TryAdd(p, peer.ID(""))
-	}
-	result := set.GetClosestNInStates(1, qpeerset.PeerHeard)
-
-	if len(result) == 0 {
-		return peer.ID("")
-	}
-
-	return result[0]
 }

@@ -48,7 +48,7 @@ type RelayManager struct {
 	Forwarder           ForwardSender
 	CreateProxySession  CreateProxySession
 	Ledger              *RelayLedger
-	proxyTransitionProb float64
+	ProxyTransitionProb float64
 	peerTagger          PeerTagger
 	self                peer.ID
 }
@@ -60,14 +60,14 @@ func NewRelayManager(peerTagger PeerTagger, self peer.ID) *RelayManager {
 		Ledger: &RelayLedger{
 			items: make(map[cid.Cid]map[peer.ID]bool, 0),
 		},
-		proxyTransitionProb: defaultProxyPhaseTransitionProbability,
+		ProxyTransitionProb: defaultProxyPhaseTransitionProbability,
 		peerTagger:          peerTagger,
 		self:                self,
 	}
 }
 
 // ProcessForwards randomly decides for each cid either to forward it or start a
-// proxy session. For the random decision proxyTransitionProb is used.
+// proxy session. For the random decision ProxyTransitionProb is used.
 // The relayledger is updated with the cids.
 func (rm *RelayManager) ProcessForwards(ctx context.Context, kt *keyTracker) {
 	rm.Ledger.Update(kt)
@@ -78,7 +78,7 @@ func (rm *RelayManager) ProcessForwards(ctx context.Context, kt *keyTracker) {
 		rm.peerTagger.Protect(kt.Peer, getConnectionProtectionTag(c))
 
 		rnd := rand.Float64()
-		if rnd <= rm.proxyTransitionProb {
+		if rnd <= rm.ProxyTransitionProb {
 			proxyDiscoveryCallback := func(provider peer.ID, received cid.Cid) {
 				if received != c {
 					log.Debugf("[recv] cid not equal proxy cid; cid=%s, peer=%s, proxycid=%s", received, provider, c)

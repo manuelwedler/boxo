@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/ipfs/boxo/bitswap/client"
+	bsfs "github.com/ipfs/boxo/bitswap/forwardstrategy"
 	"github.com/ipfs/boxo/bitswap/server"
 	"github.com/ipfs/boxo/bitswap/tracer"
 	delay "github.com/ipfs/go-ipfs-delay"
@@ -77,6 +78,22 @@ func RebroadcastDelay(newRebroadcastDelay delay.D) Option {
 
 func SetSimulateDontHavesOnTimeout(send bool) Option {
 	return Option{client.SetSimulateDontHavesOnTimeout(send)}
+}
+
+func UnforwardedSearchDelay(delay time.Duration) Option {
+	return Option{client.UnforwardedSearchDelay(delay)}
+}
+
+func ProxyPhaseTransitionProbability(probability float64) Option {
+	return Option{client.ProxyPhaseTransitionProbability(probability)}
+}
+
+func SetForwardGraphDegree(degree uint64) Option {
+	return Option{client.SetForwardGraphDegree(degree)}
+}
+
+func SetForwardStrategy(strategy bsfs.ForwardStrategy) Option {
+	return Option{client.SetForwardStrategy(strategy)}
 }
 
 func WithTracer(tap tracer.Tracer) Option {

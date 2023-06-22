@@ -7,6 +7,7 @@ import (
 	logging "github.com/ipfs/go-log"
 	"github.com/ipfs/go-metrics-interface"
 
+	fs "github.com/ipfs/boxo/bitswap/forwardstrategy"
 	cid "github.com/ipfs/go-cid"
 	peer "github.com/libp2p/go-libp2p/core/peer"
 )
@@ -57,7 +58,7 @@ func New(
 	createPeerQueue PeerQueueFactory,
 	self peer.ID,
 	forwardGraphDegree uint64,
-	forwardStrategy ForwardStrategy,
+	forwardStrategy fs.ForwardStrategy,
 	peerTagger PeerTagger) *PeerManager {
 	wantGauge := metrics.NewCtx(ctx, "wantlist_total", "Number of items in wantlist.").Gauge()
 	wantBlockGauge := metrics.NewCtx(ctx, "want_blocks_total", "Number of want-blocks in wantlist.").Gauge()
@@ -72,6 +73,14 @@ func New(
 		sessions:     make(map[uint64]Session),
 		peerSessions: make(map[peer.ID]map[uint64]struct{}),
 	}
+}
+
+func (pm *PeerManager) SetForwardGraphDegree(degree uint64) {
+	pm.pwm.fgm.degree = degree
+}
+
+func (pm *PeerManager) SetForwardStrategy(strategy fs.ForwardStrategy) {
+	pm.pwm.fgm.strategy = strategy
 }
 
 func (pm *PeerManager) AvailablePeers() []peer.ID {

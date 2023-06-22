@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 
+	fs "github.com/ipfs/boxo/bitswap/forwardstrategy"
 	cid "github.com/ipfs/go-cid"
 	peer "github.com/libp2p/go-libp2p/core/peer"
 )
@@ -52,7 +53,7 @@ func newPeerWantManager(
 	wantGauge Gauge,
 	wantBlockGauge Gauge,
 	forwardGraphDegree uint64,
-	forwardStrategy ForwardStrategy,
+	forwardStrategy fs.ForwardStrategy,
 	peerTagger PeerTagger) *peerWantManager {
 	fgm := newForwardGraphManager(ctx, forwardGraphDegree, forwardStrategy, peerTagger)
 	return &peerWantManager{

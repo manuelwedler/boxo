@@ -23,6 +23,7 @@ import (
 	bssim "github.com/ipfs/boxo/bitswap/client/internal/sessioninterestmanager"
 	bssm "github.com/ipfs/boxo/bitswap/client/internal/sessionmanager"
 	bsspm "github.com/ipfs/boxo/bitswap/client/internal/sessionpeermanager"
+	bsfs "github.com/ipfs/boxo/bitswap/forwardstrategy"
 	"github.com/ipfs/boxo/bitswap/internal"
 	"github.com/ipfs/boxo/bitswap/internal/defaults"
 	bsmsg "github.com/ipfs/boxo/bitswap/message"
@@ -64,6 +65,30 @@ func RebroadcastDelay(newRebroadcastDelay delay.D) Option {
 func SetSimulateDontHavesOnTimeout(send bool) Option {
 	return func(bs *Client) {
 		bs.simulateDontHavesOnTimeout = send
+	}
+}
+
+func UnforwardedSearchDelay(delay time.Duration) Option {
+	return func(bs *Client) {
+		bs.unforwardedSearchDelay = delay
+	}
+}
+
+func ProxyPhaseTransitionProbability(probability float64) Option {
+	return func(bs *Client) {
+		bs.rm.ProxyTransitionProb = probability
+	}
+}
+
+func SetForwardGraphDegree(degree uint64) Option {
+	return func(bs *Client) {
+		bs.pm.SetForwardGraphDegree(degree)
+	}
+}
+
+func SetForwardStrategy(strategy bsfs.ForwardStrategy) Option {
+	return func(bs *Client) {
+		bs.pm.SetForwardStrategy(strategy)
 	}
 }
 
@@ -121,7 +146,7 @@ func New(parent context.Context, network bsnet.BitSwapNetwork, bstore blockstore
 
 	sim := bssim.New()
 	bpm := bsbpm.New()
-	forwardStrategy := bspm.NewRandomForward()
+	forwardStrategy := bsfs.NewRandomForward()
 	pm := bspm.New(ctx, peerQueueFactory, network.Self(), defaults.ForwardGraphDegree, forwardStrategy, network.ConnectionManager())
 	pqm := bspqm.New(ctx, network)
 
