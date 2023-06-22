@@ -121,7 +121,8 @@ func New(parent context.Context, network bsnet.BitSwapNetwork, bstore blockstore
 
 	sim := bssim.New()
 	bpm := bsbpm.New()
-	pm := bspm.New(ctx, peerQueueFactory, network.Self())
+	forwardStrategy := bspm.NewRandomForward()
+	pm := bspm.New(ctx, peerQueueFactory, network.Self(), defaults.ForwardGraphDegree, forwardStrategy, network.ConnectionManager())
 	pqm := bspqm.New(ctx, network)
 
 	sessionFactory := func(

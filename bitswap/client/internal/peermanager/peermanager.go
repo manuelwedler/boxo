@@ -52,12 +52,19 @@ type PeerManager struct {
 }
 
 // New creates a new PeerManager, given a context and a peerQueueFactory.
-func New(ctx context.Context, createPeerQueue PeerQueueFactory, self peer.ID) *PeerManager {
+func New(
+	ctx context.Context,
+	createPeerQueue PeerQueueFactory,
+	self peer.ID,
+	forwardGraphDegree uint64,
+	forwardStrategy ForwardStrategy,
+	peerTagger PeerTagger) *PeerManager {
 	wantGauge := metrics.NewCtx(ctx, "wantlist_total", "Number of items in wantlist.").Gauge()
 	wantBlockGauge := metrics.NewCtx(ctx, "want_blocks_total", "Number of want-blocks in wantlist.").Gauge()
+	pwm := newPeerWantManager(ctx, wantGauge, wantBlockGauge, forwardGraphDegree, forwardStrategy, peerTagger)
 	return &PeerManager{
 		peerQueues:      make(map[peer.ID]PeerQueue),
-		pwm:             newPeerWantManager(wantGauge, wantBlockGauge),
+		pwm:             pwm,
 		createPeerQueue: createPeerQueue,
 		ctx:             ctx,
 		self:            self,

@@ -2,9 +2,8 @@ package peermanager
 
 import (
 	"bytes"
+	"context"
 	"fmt"
-	"math/rand"
-	"time"
 
 	cid "github.com/ipfs/go-cid"
 	peer "github.com/libp2p/go-libp2p/core/peer"
@@ -36,6 +35,8 @@ type peerWantManager struct {
 	wantGauge Gauge
 	// Keeps track of the number of active want-blocks
 	wantBlockGauge Gauge
+
+	fgm *forwardGraphManager
 }
 
 type peerWant struct {
@@ -46,13 +47,21 @@ type peerWant struct {
 
 // New creates a new peerWantManager with a Gauge that keeps track of the
 // number of active want-blocks (ie sent but no response received)
-func newPeerWantManager(wantGauge Gauge, wantBlockGauge Gauge) *peerWantManager {
+func newPeerWantManager(
+	ctx context.Context,
+	wantGauge Gauge,
+	wantBlockGauge Gauge,
+	forwardGraphDegree uint64,
+	forwardStrategy ForwardStrategy,
+	peerTagger PeerTagger) *peerWantManager {
+	fgm := newForwardGraphManager(ctx, forwardGraphDegree, forwardStrategy, peerTagger)
 	return &peerWantManager{
 		broadcastWants: cid.NewSet(),
 		peerWants:      make(map[peer.ID]*peerWant),
 		wantPeers:      make(map[cid.Cid]map[peer.ID]struct{}),
 		wantGauge:      wantGauge,
 		wantBlockGauge: wantBlockGauge,
+		fgm:            fgm,
 	}
 }
 
@@ -116,26 +125,12 @@ func (pwm *peerWantManager) removePeer(p peer.ID) {
 	delete(pwm.peerWants, p)
 }
 
-// Selects a random peer for forwarding.
-func (pwm *peerWantManager) selectRandomPeer() peer.ID {
-	rand.Seed(time.Now().UnixNano())
-	perm := rand.Perm(len(pwm.peerWants))
-
-	ks := make([]peer.ID, 0)
-	// Get all peers available to broadcast
-	for k := range pwm.peerWants {
-		ks = append(ks, k)
-	}
-
-	// Choose a random one.
-	return ks[perm[0]]
-}
-
 // forwardWants sends want-forwards to one peer.
 func (pwm *peerWantManager) forwardWants(wantHaves []cid.Cid) {
-	p := pwm.selectRandomPeer() // TODO / different strategies for selecting the first peer
-	// TODO / next peer should be selected without strategy
-	pwm.peerWants[p].peerQueue.AddForwardWants(wantHaves)
+	for _, c := range wantHaves {
+		p := pwm.fgm.GetSuccessorByStrategy(c)
+		pwm.peerWants[p].peerQueue.AddForwardWants(wantHaves)
+	}
 }
 
 // forwardHaves sends forward-haves to a specified peer.
