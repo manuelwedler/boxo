@@ -14,7 +14,7 @@ import (
 
 const (
 	protectionTag         = "bs-fgw"
-	reconstructGraphDelay = time.Second * 4
+	reconstructGraphDelay = time.Second * 5
 	// Only makes sense with reconstructGraphDelay in the order of 10 minutes
 	// initialConstructionDelay = time.Second * 10
 )
