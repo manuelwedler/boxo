@@ -13,6 +13,7 @@ import (
 	bssession "github.com/ipfs/boxo/bitswap/client/internal/session"
 	bssim "github.com/ipfs/boxo/bitswap/client/internal/sessioninterestmanager"
 	"github.com/ipfs/boxo/bitswap/internal/testutil"
+	bsrm "github.com/ipfs/boxo/bitswap/relaymanager"
 	"github.com/ipfs/boxo/internal/test"
 	blocks "github.com/ipfs/go-block-format"
 	cid "github.com/ipfs/go-cid"
@@ -68,6 +69,7 @@ func (*fakePeerManager) RegisterSession(peer.ID, bspm.Session)                  
 func (*fakePeerManager) UnregisterSession(uint64)                                 {}
 func (*fakePeerManager) SendWants(context.Context, peer.ID, []cid.Cid, []cid.Cid) {}
 func (*fakePeerManager) BroadcastWantHaves(context.Context, []cid.Cid)            {}
+func (*fakePeerManager) ForwardWants(context.Context, []cid.Cid)                  {}
 func (fpm *fakePeerManager) SendCancels(ctx context.Context, cancels []cid.Cid) {
 	fpm.lk.Lock()
 	defer fpm.lk.Unlock()
@@ -89,7 +91,10 @@ func sessionFactory(ctx context.Context,
 	notif notifications.PubSub,
 	provSearchDelay time.Duration,
 	rebroadcastDelay delay.D,
-	self peer.ID) Session {
+	self peer.ID,
+	proxy bool,
+	proxyDiscoveryCallback bsrm.ProxyDiscoveryCallback,
+	unforwardedSearchDelay time.Duration) Session {
 	fs := &fakeSession{
 		id:    id,
 		pm:    sprm.(*fakeSesPeerManager),
@@ -123,28 +128,28 @@ func TestReceiveFrom(t *testing.T) {
 	p := peer.ID(fmt.Sprint(123))
 	block := blocks.NewBlock([]byte("block"))
 
-	firstSession := sm.NewSession(ctx, time.Second, delay.Fixed(time.Minute)).(*fakeSession)
-	secondSession := sm.NewSession(ctx, time.Second, delay.Fixed(time.Minute)).(*fakeSession)
-	thirdSession := sm.NewSession(ctx, time.Second, delay.Fixed(time.Minute)).(*fakeSession)
+	firstSession := sm.NewSession(ctx, time.Second, delay.Fixed(time.Minute), time.Second).(*fakeSession)
+	secondSession := sm.NewSession(ctx, time.Second, delay.Fixed(time.Minute), time.Second).(*fakeSession)
+	thirdSession := sm.NewSession(ctx, time.Second, delay.Fixed(time.Minute), time.Second).(*fakeSession)
 
 	sim.RecordSessionInterest(firstSession.ID(), []cid.Cid{block.Cid()})
 	sim.RecordSessionInterest(thirdSession.ID(), []cid.Cid{block.Cid()})
 
-	sm.ReceiveFrom(ctx, p, []cid.Cid{block.Cid()}, []cid.Cid{}, []cid.Cid{})
+	sm.ReceiveFrom(ctx, p, []cid.Cid{block.Cid()}, []cid.Cid{}, []cid.Cid{}, map[cid.Cid][]peer.ID{})
 	if len(firstSession.ks) == 0 ||
 		len(secondSession.ks) > 0 ||
 		len(thirdSession.ks) == 0 {
 		t.Fatal("should have received blocks but didn't")
 	}
 
-	sm.ReceiveFrom(ctx, p, []cid.Cid{}, []cid.Cid{block.Cid()}, []cid.Cid{})
+	sm.ReceiveFrom(ctx, p, []cid.Cid{}, []cid.Cid{block.Cid()}, []cid.Cid{}, map[cid.Cid][]peer.ID{})
 	if len(firstSession.wantBlocks) == 0 ||
 		len(secondSession.wantBlocks) > 0 ||
 		len(thirdSession.wantBlocks) == 0 {
 		t.Fatal("should have received want-blocks but didn't")
 	}
 
-	sm.ReceiveFrom(ctx, p, []cid.Cid{}, []cid.Cid{}, []cid.Cid{block.Cid()})
+	sm.ReceiveFrom(ctx, p, []cid.Cid{}, []cid.Cid{}, []cid.Cid{block.Cid()}, map[cid.Cid][]peer.ID{})
 	if len(firstSession.wantHaves) == 0 ||
 		len(secondSession.wantHaves) > 0 ||
 		len(thirdSession.wantHaves) == 0 {
@@ -172,9 +177,9 @@ func TestReceiveBlocksWhenManagerShutdown(t *testing.T) {
 	p := peer.ID(fmt.Sprint(123))
 	block := blocks.NewBlock([]byte("block"))
 
-	firstSession := sm.NewSession(ctx, time.Second, delay.Fixed(time.Minute)).(*fakeSession)
-	secondSession := sm.NewSession(ctx, time.Second, delay.Fixed(time.Minute)).(*fakeSession)
-	thirdSession := sm.NewSession(ctx, time.Second, delay.Fixed(time.Minute)).(*fakeSession)
+	firstSession := sm.NewSession(ctx, time.Second, delay.Fixed(time.Minute), time.Second).(*fakeSession)
+	secondSession := sm.NewSession(ctx, time.Second, delay.Fixed(time.Minute), time.Second).(*fakeSession)
+	thirdSession := sm.NewSession(ctx, time.Second, delay.Fixed(time.Minute), time.Second).(*fakeSession)
 
 	sim.RecordSessionInterest(firstSession.ID(), []cid.Cid{block.Cid()})
 	sim.RecordSessionInterest(secondSession.ID(), []cid.Cid{block.Cid()})
@@ -185,7 +190,7 @@ func TestReceiveBlocksWhenManagerShutdown(t *testing.T) {
 	// wait for sessions to get removed
 	time.Sleep(10 * time.Millisecond)
 
-	sm.ReceiveFrom(ctx, p, []cid.Cid{block.Cid()}, []cid.Cid{}, []cid.Cid{})
+	sm.ReceiveFrom(ctx, p, []cid.Cid{block.Cid()}, []cid.Cid{}, []cid.Cid{}, map[cid.Cid][]peer.ID{})
 	if len(firstSession.ks) > 0 ||
 		len(secondSession.ks) > 0 ||
 		len(thirdSession.ks) > 0 {
@@ -208,10 +213,10 @@ func TestReceiveBlocksWhenSessionContextCancelled(t *testing.T) {
 	p := peer.ID(fmt.Sprint(123))
 	block := blocks.NewBlock([]byte("block"))
 
-	firstSession := sm.NewSession(ctx, time.Second, delay.Fixed(time.Minute)).(*fakeSession)
+	firstSession := sm.NewSession(ctx, time.Second, delay.Fixed(time.Minute), time.Second).(*fakeSession)
 	sessionCtx, sessionCancel := context.WithCancel(ctx)
-	secondSession := sm.NewSession(sessionCtx, time.Second, delay.Fixed(time.Minute)).(*fakeSession)
-	thirdSession := sm.NewSession(ctx, time.Second, delay.Fixed(time.Minute)).(*fakeSession)
+	secondSession := sm.NewSession(sessionCtx, time.Second, delay.Fixed(time.Minute), time.Second).(*fakeSession)
+	thirdSession := sm.NewSession(ctx, time.Second, delay.Fixed(time.Minute), time.Second).(*fakeSession)
 
 	sim.RecordSessionInterest(firstSession.ID(), []cid.Cid{block.Cid()})
 	sim.RecordSessionInterest(secondSession.ID(), []cid.Cid{block.Cid()})
@@ -222,7 +227,7 @@ func TestReceiveBlocksWhenSessionContextCancelled(t *testing.T) {
 	// wait for sessions to get removed
 	time.Sleep(10 * time.Millisecond)
 
-	sm.ReceiveFrom(ctx, p, []cid.Cid{block.Cid()}, []cid.Cid{}, []cid.Cid{})
+	sm.ReceiveFrom(ctx, p, []cid.Cid{block.Cid()}, []cid.Cid{}, []cid.Cid{}, map[cid.Cid][]peer.ID{})
 	if len(firstSession.ks) == 0 ||
 		len(secondSession.ks) > 0 ||
 		len(thirdSession.ks) == 0 {
@@ -246,9 +251,9 @@ func TestShutdown(t *testing.T) {
 	p := peer.ID(fmt.Sprint(123))
 	block := blocks.NewBlock([]byte("block"))
 	cids := []cid.Cid{block.Cid()}
-	firstSession := sm.NewSession(ctx, time.Second, delay.Fixed(time.Minute)).(*fakeSession)
+	firstSession := sm.NewSession(ctx, time.Second, delay.Fixed(time.Minute), time.Second).(*fakeSession)
 	sim.RecordSessionInterest(firstSession.ID(), cids)
-	sm.ReceiveFrom(ctx, p, []cid.Cid{}, []cid.Cid{}, cids)
+	sm.ReceiveFrom(ctx, p, []cid.Cid{}, []cid.Cid{}, cids, map[cid.Cid][]peer.ID{})
 
 	if !bpm.HasKey(block.Cid()) {
 		t.Fatal("expected cid to be added to block presence manager")

@@ -2,10 +2,12 @@ package peermanager
 
 import (
 	"context"
+	"math"
 	"math/rand"
 	"testing"
 	"time"
 
+	fs "github.com/ipfs/boxo/bitswap/forwardstrategy"
 	"github.com/ipfs/boxo/bitswap/internal/testutil"
 	"github.com/ipfs/boxo/internal/test"
 	cid "github.com/ipfs/go-cid"
@@ -37,6 +39,19 @@ func (fp *mockPeerQueue) AddCancels(cs []cid.Cid) {
 	fp.msgs <- msg{fp.p, nil, nil, cs}
 }
 func (fp *mockPeerQueue) ResponseReceived(ks []cid.Cid) {
+}
+func (fp *mockPeerQueue) AddForwardWants([]cid.Cid) {
+}
+func (fp *mockPeerQueue) AddForwardHaves(to peer.ID, have cid.Cid, peers []peer.ID) {
+}
+
+type fakePeerTagger struct {
+}
+
+func (fpt *fakePeerTagger) Protect(peer.ID, string) {
+}
+func (fpt *fakePeerTagger) Unprotect(peer.ID, string) bool {
+	return false
 }
 
 type peerWants struct {
@@ -85,7 +100,7 @@ func TestAddingAndRemovingPeers(t *testing.T) {
 
 	tp := testutil.GeneratePeers(6)
 	self, peer1, peer2, peer3, peer4, peer5 := tp[0], tp[1], tp[2], tp[3], tp[4], tp[5]
-	peerManager := New(ctx, peerQueueFactory, self)
+	peerManager := New(ctx, peerQueueFactory, self, math.MaxInt64, fs.NewRandomForward(), &fakePeerTagger{})
 
 	peerManager.Connected(peer1)
 	peerManager.Connected(peer2)
@@ -130,7 +145,7 @@ func TestBroadcastOnConnect(t *testing.T) {
 	peerQueueFactory := makePeerQueueFactory(msgs)
 	tp := testutil.GeneratePeers(2)
 	self, peer1 := tp[0], tp[1]
-	peerManager := New(ctx, peerQueueFactory, self)
+	peerManager := New(ctx, peerQueueFactory, self, math.MaxInt64, fs.NewRandomForward(), &fakePeerTagger{})
 
 	cids := testutil.GenerateCids(2)
 	peerManager.BroadcastWantHaves(ctx, cids)
@@ -153,7 +168,7 @@ func TestBroadcastWantHaves(t *testing.T) {
 	peerQueueFactory := makePeerQueueFactory(msgs)
 	tp := testutil.GeneratePeers(3)
 	self, peer1, peer2 := tp[0], tp[1], tp[2]
-	peerManager := New(ctx, peerQueueFactory, self)
+	peerManager := New(ctx, peerQueueFactory, self, math.MaxInt64, fs.NewRandomForward(), &fakePeerTagger{})
 
 	cids := testutil.GenerateCids(3)
 
@@ -196,7 +211,7 @@ func TestSendWants(t *testing.T) {
 	peerQueueFactory := makePeerQueueFactory(msgs)
 	tp := testutil.GeneratePeers(2)
 	self, peer1 := tp[0], tp[1]
-	peerManager := New(ctx, peerQueueFactory, self)
+	peerManager := New(ctx, peerQueueFactory, self, math.MaxInt64, fs.NewRandomForward(), &fakePeerTagger{})
 	cids := testutil.GenerateCids(4)
 
 	peerManager.Connected(peer1)
@@ -232,7 +247,7 @@ func TestSendCancels(t *testing.T) {
 	peerQueueFactory := makePeerQueueFactory(msgs)
 	tp := testutil.GeneratePeers(3)
 	self, peer1, peer2 := tp[0], tp[1], tp[2]
-	peerManager := New(ctx, peerQueueFactory, self)
+	peerManager := New(ctx, peerQueueFactory, self, math.MaxInt64, fs.NewRandomForward(), &fakePeerTagger{})
 	cids := testutil.GenerateCids(4)
 
 	// Connect to peer1 and peer2
@@ -294,7 +309,7 @@ func TestSessionRegistration(t *testing.T) {
 
 	tp := testutil.GeneratePeers(3)
 	self, p1, p2 := tp[0], tp[1], tp[2]
-	peerManager := New(ctx, peerQueueFactory, self)
+	peerManager := New(ctx, peerQueueFactory, self, math.MaxInt64, fs.NewRandomForward(), &fakePeerTagger{})
 
 	id := uint64(1)
 	s := newSess(id)
@@ -338,10 +353,12 @@ type benchPeerQueue struct {
 func (*benchPeerQueue) Startup()  {}
 func (*benchPeerQueue) Shutdown() {}
 
-func (*benchPeerQueue) AddBroadcastWantHaves(whs []cid.Cid)   {}
-func (*benchPeerQueue) AddWants(wbs []cid.Cid, whs []cid.Cid) {}
-func (*benchPeerQueue) AddCancels(cs []cid.Cid)               {}
-func (*benchPeerQueue) ResponseReceived(ks []cid.Cid)         {}
+func (*benchPeerQueue) AddBroadcastWantHaves(whs []cid.Cid)                          {}
+func (*benchPeerQueue) AddWants(wbs []cid.Cid, whs []cid.Cid)                        {}
+func (*benchPeerQueue) AddCancels(cs []cid.Cid)                                      {}
+func (*benchPeerQueue) ResponseReceived(ks []cid.Cid)                                {}
+func (fp *benchPeerQueue) AddForwardWants([]cid.Cid)                                 {}
+func (fp *benchPeerQueue) AddForwardHaves(to peer.ID, have cid.Cid, peers []peer.ID) {}
 
 // Simplistic benchmark to allow us to stress test
 func BenchmarkPeerManager(b *testing.B) {
@@ -355,7 +372,7 @@ func BenchmarkPeerManager(b *testing.B) {
 
 	self := testutil.GeneratePeers(1)[0]
 	peers := testutil.GeneratePeers(500)
-	peerManager := New(ctx, peerQueueFactory, self)
+	peerManager := New(ctx, peerQueueFactory, self, math.MaxInt64, fs.NewRandomForward(), &fakePeerTagger{})
 
 	// Create a bunch of connections
 	connected := 0

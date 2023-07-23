@@ -123,6 +123,10 @@ func (fpf *fakeProviderFinder) FindProvidersAsync(ctx context.Context, k cid.Cid
 	return make(chan peer.ID)
 }
 
+func (fpf *fakeProviderFinder) ConnectTo(ctx context.Context, p peer.ID) error {
+	return nil
+}
+
 type wantReq struct {
 	cids []cid.Cid
 }
@@ -147,6 +151,7 @@ func (pm *fakePeerManager) BroadcastWantHaves(ctx context.Context, cids []cid.Ci
 	}
 }
 func (pm *fakePeerManager) SendCancels(ctx context.Context, cancels []cid.Cid) {}
+func (pm *fakePeerManager) ForwardWants(context.Context, []cid.Cid)            {}
 
 func TestSessionGetBlocks(t *testing.T) {
 	test.Flaky(t)
@@ -161,7 +166,7 @@ func TestSessionGetBlocks(t *testing.T) {
 	defer notif.Shutdown()
 	id := testutil.GenerateSessionID()
 	sm := newMockSessionMgr()
-	session := New(ctx, sm, id, fspm, fpf, sim, fpm, bpm, notif, time.Second, delay.Fixed(time.Minute), "")
+	session := New(ctx, sm, id, fspm, fpf, sim, fpm, bpm, notif, time.Second, delay.Fixed(time.Minute), "", false, func(peer.ID, cid.Cid) {}, time.Second)
 	blockGenerator := blocksutil.NewBlockGenerator()
 	blks := blockGenerator.Blocks(broadcastLiveWantsLimit * 2)
 	var cids []cid.Cid
@@ -259,7 +264,7 @@ func TestSessionFindMorePeers(t *testing.T) {
 	defer notif.Shutdown()
 	id := testutil.GenerateSessionID()
 	sm := newMockSessionMgr()
-	session := New(ctx, sm, id, fspm, fpf, sim, fpm, bpm, notif, time.Second, delay.Fixed(time.Minute), "")
+	session := New(ctx, sm, id, fspm, fpf, sim, fpm, bpm, notif, time.Second, delay.Fixed(time.Minute), "", false, func(peer.ID, cid.Cid) {}, time.Second)
 	session.SetBaseTickDelay(200 * time.Microsecond)
 	blockGenerator := blocksutil.NewBlockGenerator()
 	blks := blockGenerator.Blocks(broadcastLiveWantsLimit * 2)
@@ -336,7 +341,7 @@ func TestSessionOnPeersExhausted(t *testing.T) {
 	defer notif.Shutdown()
 	id := testutil.GenerateSessionID()
 	sm := newMockSessionMgr()
-	session := New(ctx, sm, id, fspm, fpf, sim, fpm, bpm, notif, time.Second, delay.Fixed(time.Minute), "")
+	session := New(ctx, sm, id, fspm, fpf, sim, fpm, bpm, notif, time.Second, delay.Fixed(time.Minute), "", false, func(peer.ID, cid.Cid) {}, time.Second)
 	blockGenerator := blocksutil.NewBlockGenerator()
 	blks := blockGenerator.Blocks(broadcastLiveWantsLimit + 5)
 	var cids []cid.Cid
@@ -383,7 +388,7 @@ func TestSessionFailingToGetFirstBlock(t *testing.T) {
 	defer notif.Shutdown()
 	id := testutil.GenerateSessionID()
 	sm := newMockSessionMgr()
-	session := New(ctx, sm, id, fspm, fpf, sim, fpm, bpm, notif, 10*time.Millisecond, delay.Fixed(100*time.Millisecond), "")
+	session := New(ctx, sm, id, fspm, fpf, sim, fpm, bpm, notif, 10*time.Millisecond, delay.Fixed(100*time.Millisecond), "", false, func(peer.ID, cid.Cid) {}, time.Second)
 	blockGenerator := blocksutil.NewBlockGenerator()
 	blks := blockGenerator.Blocks(4)
 	var cids []cid.Cid
@@ -501,7 +506,7 @@ func TestSessionCtxCancelClosesGetBlocksChannel(t *testing.T) {
 
 	// Create a new session with its own context
 	sessctx, sesscancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
-	session := New(sessctx, sm, id, fspm, fpf, sim, fpm, bpm, notif, time.Second, delay.Fixed(time.Minute), "")
+	session := New(sessctx, sm, id, fspm, fpf, sim, fpm, bpm, notif, time.Second, delay.Fixed(time.Minute), "", false, func(peer.ID, cid.Cid) {}, time.Second)
 
 	timerCtx, timerCancel := context.WithTimeout(context.Background(), 10*time.Millisecond)
 	defer timerCancel()
@@ -554,7 +559,7 @@ func TestSessionOnShutdownCalled(t *testing.T) {
 	// Create a new session with its own context
 	sessctx, sesscancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
 	defer sesscancel()
-	session := New(sessctx, sm, id, fspm, fpf, sim, fpm, bpm, notif, time.Second, delay.Fixed(time.Minute), "")
+	session := New(sessctx, sm, id, fspm, fpf, sim, fpm, bpm, notif, time.Second, delay.Fixed(time.Minute), "", false, func(peer.ID, cid.Cid) {}, time.Second)
 
 	// Shutdown the session
 	session.Shutdown()
@@ -581,7 +586,7 @@ func TestSessionReceiveMessageAfterCtxCancel(t *testing.T) {
 	defer notif.Shutdown()
 	id := testutil.GenerateSessionID()
 	sm := newMockSessionMgr()
-	session := New(ctx, sm, id, fspm, fpf, sim, fpm, bpm, notif, time.Second, delay.Fixed(time.Minute), "")
+	session := New(ctx, sm, id, fspm, fpf, sim, fpm, bpm, notif, time.Second, delay.Fixed(time.Minute), "", false, func(peer.ID, cid.Cid) {}, time.Second)
 	blockGenerator := blocksutil.NewBlockGenerator()
 	blks := blockGenerator.Blocks(2)
 	cids := []cid.Cid{blks[0].Cid(), blks[1].Cid()}

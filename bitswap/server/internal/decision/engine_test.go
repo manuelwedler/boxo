@@ -16,6 +16,7 @@ import (
 	"github.com/ipfs/boxo/bitswap/internal/testutil"
 	message "github.com/ipfs/boxo/bitswap/message"
 	pb "github.com/ipfs/boxo/bitswap/message/pb"
+	rm "github.com/ipfs/boxo/bitswap/relaymanager"
 	blockstore "github.com/ipfs/boxo/blockstore"
 	"github.com/ipfs/boxo/internal/test"
 	blocks "github.com/ipfs/go-block-format"
@@ -201,6 +202,7 @@ func newEngineForTesting(
 		peerTagger,
 		self,
 		maxReplaceSize,
+		&rm.RelayManager{},
 		opts...,
 	)
 }

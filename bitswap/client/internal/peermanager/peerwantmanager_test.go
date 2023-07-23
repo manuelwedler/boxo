@@ -1,8 +1,12 @@
 package peermanager
 
 import (
+	"context"
+	"math"
 	"testing"
+	"time"
 
+	fs "github.com/ipfs/boxo/bitswap/forwardstrategy"
 	"github.com/ipfs/boxo/bitswap/internal/testutil"
 	"github.com/ipfs/boxo/internal/test"
 	cid "github.com/ipfs/go-cid"
@@ -49,6 +53,10 @@ func (mpq *mockPQ) AddCancels(cs []cid.Cid) {
 }
 func (mpq *mockPQ) ResponseReceived(ks []cid.Cid) {
 }
+func (mpq *mockPQ) AddForwardWants([]cid.Cid) {
+}
+func (mpq *mockPQ) AddForwardHaves(to peer.ID, have cid.Cid, peers []peer.ID) {
+}
 
 func clearSent(pqs map[peer.ID]PeerQueue) {
 	for _, pqi := range pqs {
@@ -59,7 +67,9 @@ func clearSent(pqs map[peer.ID]PeerQueue) {
 func TestEmpty(t *testing.T) {
 	test.Flaky(t)
 
-	pwm := newPeerWantManager(&gauge{}, &gauge{})
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+	pwm := newPeerWantManager(ctx, &gauge{}, &gauge{}, math.MaxInt64, fs.NewRandomForward(), &fakePeerTagger{})
 
 	if len(pwm.getWantBlocks()) > 0 {
 		t.Fatal("Expected GetWantBlocks() to have length 0")
@@ -72,7 +82,9 @@ func TestEmpty(t *testing.T) {
 func TestPWMBroadcastWantHaves(t *testing.T) {
 	test.Flaky(t)
 
-	pwm := newPeerWantManager(&gauge{}, &gauge{})
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+	pwm := newPeerWantManager(ctx, &gauge{}, &gauge{}, math.MaxInt64, fs.NewRandomForward(), &fakePeerTagger{})
 
 	peers := testutil.GeneratePeers(3)
 	cids := testutil.GenerateCids(2)
@@ -186,7 +198,9 @@ func TestPWMBroadcastWantHaves(t *testing.T) {
 func TestPWMSendWants(t *testing.T) {
 	test.Flaky(t)
 
-	pwm := newPeerWantManager(&gauge{}, &gauge{})
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+	pwm := newPeerWantManager(ctx, &gauge{}, &gauge{}, math.MaxInt64, fs.NewRandomForward(), &fakePeerTagger{})
 
 	peers := testutil.GeneratePeers(2)
 	p0 := peers[0]
@@ -268,7 +282,9 @@ func TestPWMSendWants(t *testing.T) {
 func TestPWMSendCancels(t *testing.T) {
 	test.Flaky(t)
 
-	pwm := newPeerWantManager(&gauge{}, &gauge{})
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+	pwm := newPeerWantManager(ctx, &gauge{}, &gauge{}, math.MaxInt64, fs.NewRandomForward(), &fakePeerTagger{})
 
 	peers := testutil.GeneratePeers(2)
 	p0 := peers[0]
@@ -350,7 +366,9 @@ func TestStats(t *testing.T) {
 
 	g := &gauge{}
 	wbg := &gauge{}
-	pwm := newPeerWantManager(g, wbg)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+	pwm := newPeerWantManager(ctx, g, wbg, math.MaxInt64, fs.NewRandomForward(), &fakePeerTagger{})
 
 	peers := testutil.GeneratePeers(2)
 	p0 := peers[0]
@@ -453,7 +471,9 @@ func TestStatsOverlappingWantBlockWantHave(t *testing.T) {
 
 	g := &gauge{}
 	wbg := &gauge{}
-	pwm := newPeerWantManager(g, wbg)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+	pwm := newPeerWantManager(ctx, g, wbg, math.MaxInt64, fs.NewRandomForward(), &fakePeerTagger{})
 
 	peers := testutil.GeneratePeers(2)
 	p0 := peers[0]
@@ -494,7 +514,9 @@ func TestStatsRemovePeerOverlappingWantBlockWantHave(t *testing.T) {
 
 	g := &gauge{}
 	wbg := &gauge{}
-	pwm := newPeerWantManager(g, wbg)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+	pwm := newPeerWantManager(ctx, g, wbg, math.MaxInt64, fs.NewRandomForward(), &fakePeerTagger{})
 
 	peers := testutil.GeneratePeers(2)
 	p0 := peers[0]
