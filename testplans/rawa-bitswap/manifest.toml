@@ -1,0 +1,34 @@
+name = "rawa-bitswap"
+
+[defaults]
+builder = "exec:go"
+runner = "local:exec"
+
+[builders."docker:go"]
+enabled = true
+build_base_image = "golang:1.19-buster"
+
+[builders."exec:go"]
+enabled = true
+
+[runners."local:docker"]
+enabled = true
+
+[runners."local:exec"]
+enabled = true
+
+[runners."cluster:swarm"]
+enabled = true
+
+[runners."cluster:k8s"]
+enabled = true
+
+[[testcases]]
+name = "rawa-test"
+instances = { min = 2, max = 100, default = 2 }
+
+  [testcases.params]
+  debug = { type = "bool", desc = "show debug logs", default = false }
+  timeout_secs = { type = "int", desc = "timeout", unit = "seconds", default = 600 }
+  run_count = { type = "int", desc = "number of iterations of the test", unit = "iteration", default = 1 }
+  conn_per_node = { type = "int", desc = "creates connections to a number of peers at random", default = 2 }
