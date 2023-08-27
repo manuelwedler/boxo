@@ -117,13 +117,6 @@ type RelayLedger struct {
 	lk    sync.RWMutex
 }
 
-// BlockSeen removes interest in relayManager if a peer interested have sent
-// already the block to prevent from forwarding to it again.
-func (rl *RelayLedger) BlockSeen(c cid.Cid, p peer.ID) {
-	// RemoveInterest from this peer becaues he has sent the block for that CID (avoid resending)
-	rl.RemoveInterest(c, p)
-}
-
 // RemoveInterest removes interest for a CID from a peer from the registry.
 func (rl *RelayLedger) RemoveInterest(c cid.Cid, p peer.ID) {
 	rl.lk.Lock()
