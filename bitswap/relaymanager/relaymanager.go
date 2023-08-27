@@ -23,7 +23,7 @@ const (
 
 type ForwardSender interface {
 	// ForwardWants sends want-forwards to one connected peer
-	ForwardWants(context.Context, []cid.Cid) error
+	ForwardWants(ctx context.Context, cids []cid.Cid, exclude []peer.ID) error
 	// ForwardHaves sends forward-haves to a specified peer.
 	ForwardHaves(ctx context.Context, to peer.ID, have cid.Cid, peers []peer.ID)
 }
@@ -81,7 +81,7 @@ func (rm *RelayManager) ProcessForwards(ctx context.Context, kt *keyTracker) {
 		if rnd <= rm.ProxyTransitionProb {
 			rm.startProxyPhase(ctx, kt.Peer, c)
 		} else {
-			err := rm.Forwarder.ForwardWants(ctx, []cid.Cid{c})
+			err := rm.Forwarder.ForwardWants(ctx, []cid.Cid{c}, []peer.ID{kt.Peer})
 			if err != nil {
 				rm.startProxyPhase(ctx, kt.Peer, c)
 			}

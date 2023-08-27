@@ -132,9 +132,9 @@ func (pwm *peerWantManager) removePeer(p peer.ID) {
 }
 
 // forwardWants sends want-forwards to one peer.
-func (pwm *peerWantManager) forwardWants(wantHaves []cid.Cid) error {
+func (pwm *peerWantManager) forwardWants(wantHaves []cid.Cid, exclude []peer.ID) error {
 	for _, c := range wantHaves {
-		p := pwm.fgm.GetSuccessorByStrategy(c)
+		p := pwm.fgm.GetSuccessorByStrategy(c, exclude)
 		log.Debugw("pwm forwardWants", "selectedSuccessor", p, "cids", wantHaves)
 		err := p.Validate()
 		if err == nil {

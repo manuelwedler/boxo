@@ -150,8 +150,8 @@ func (pm *fakePeerManager) BroadcastWantHaves(ctx context.Context, cids []cid.Ci
 	case <-ctx.Done():
 	}
 }
-func (pm *fakePeerManager) SendCancels(ctx context.Context, cancels []cid.Cid) {}
-func (pm *fakePeerManager) ForwardWants(context.Context, []cid.Cid) error      { return nil }
+func (pm *fakePeerManager) SendCancels(ctx context.Context, cancels []cid.Cid)       {}
+func (pm *fakePeerManager) ForwardWants(context.Context, []cid.Cid, []peer.ID) error { return nil }
 
 func TestSessionGetBlocks(t *testing.T) {
 	test.Flaky(t)

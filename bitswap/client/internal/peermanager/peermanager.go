@@ -150,11 +150,11 @@ func (pm *PeerManager) ResponseReceived(p peer.ID, ks []cid.Cid) {
 
 // ForwardWants sends want-forwards to one peer (used by the session
 // to discover seeds).
-func (pm *PeerManager) ForwardWants(ctx context.Context, wantHaves []cid.Cid) error {
+func (pm *PeerManager) ForwardWants(ctx context.Context, wantHaves []cid.Cid, exclude []peer.ID) error {
 	pm.pqLk.Lock()
 	defer pm.pqLk.Unlock()
 
-	return pm.pwm.forwardWants(wantHaves)
+	return pm.pwm.forwardWants(wantHaves, exclude)
 }
 
 // ForwardHaves sends forward-haves to a specified peer.

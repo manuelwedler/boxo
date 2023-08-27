@@ -92,7 +92,7 @@ func (fgm *forwardGraphManager) successorTarget() int {
 }
 
 // Returns a successor chosen by the used strategy.
-func (fgm *forwardGraphManager) GetSuccessorByStrategy(c cid.Cid) peer.ID {
+func (fgm *forwardGraphManager) GetSuccessorByStrategy(c cid.Cid, exclude []peer.ID) peer.ID {
 	fgm.lk.RLock()
 	defer fgm.lk.RUnlock()
 
@@ -103,7 +103,21 @@ func (fgm *forwardGraphManager) GetSuccessorByStrategy(c cid.Cid) peer.ID {
 		successors = fgm.successors
 	}
 
-	return fgm.strategy.SelectPeer(successors, c)
+	available := make(map[peer.ID]struct{}, len(successors))
+	for p := range successors {
+		addPeer := true
+		for _, e := range exclude {
+			if p == e {
+				addPeer = false
+				break
+			}
+		}
+		if addPeer {
+			available[p] = struct{}{}
+		}
+	}
+
+	return fgm.strategy.SelectPeer(available, c)
 }
 
 // Replaces all successors with newly chosen ones.

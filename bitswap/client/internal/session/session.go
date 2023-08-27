@@ -39,7 +39,7 @@ type PeerManager interface {
 	SendWants(ctx context.Context, peerId peer.ID, wantBlocks []cid.Cid, wantHaves []cid.Cid)
 	// ForwardWants sends want-forwards to one connected peer (used for
 	// session discovery)
-	ForwardWants(context.Context, []cid.Cid) error
+	ForwardWants(ctx context.Context, cids []cid.Cid, exclude []peer.ID) error
 	// BroadcastWantHaves sends want-haves to all connected peers (used for
 	// session discovery)
 	BroadcastWantHaves(context.Context, []cid.Cid)
@@ -571,7 +571,7 @@ func (s *Session) forwardWants(ctx context.Context, wants []cid.Cid) {
 			}
 		}(c)
 
-		s.pm.ForwardWants(ctx, []cid.Cid{c})
+		s.pm.ForwardWants(ctx, []cid.Cid{c}, []peer.ID{})
 	}
 }
 
