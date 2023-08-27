@@ -11,6 +11,7 @@ import (
 	bspm "github.com/ipfs/boxo/bitswap/client/internal/peermanager"
 	bssim "github.com/ipfs/boxo/bitswap/client/internal/sessioninterestmanager"
 	bsrm "github.com/ipfs/boxo/bitswap/relaymanager"
+	blockstore "github.com/ipfs/boxo/blockstore"
 	blocks "github.com/ipfs/go-block-format"
 	cid "github.com/ipfs/go-cid"
 	delay "github.com/ipfs/go-ipfs-delay"
@@ -114,6 +115,7 @@ type Session struct {
 	sprm           SessionPeerManager
 	providerFinder ProviderFinder
 	sim            *bssim.SessionInterestManager
+	blockstore     blockstore.Blockstore
 
 	sw  sessionWants
 	sws sessionWantSender
@@ -163,7 +165,8 @@ func New(
 	self peer.ID,
 	proxy bool,
 	proxyDiscoveryCallback bsrm.ProxyDiscoveryCallback,
-	unforwardedSearchDelay time.Duration) *Session {
+	unforwardedSearchDelay time.Duration,
+	bstore blockstore.Blockstore) *Session {
 
 	ctx, cancel := context.WithCancel(ctx)
 	s := &Session{
@@ -188,6 +191,7 @@ func New(
 		proxyDiscoveryCallback:  proxyDiscoveryCallback,
 		unforwardedSearchDelay:  unforwardedSearchDelay,
 		unforwardedSearchTimers: make(map[cid.Cid]*time.Timer),
+		blockstore:              bstore,
 	}
 	s.sws = newSessionWantSender(id, pm, sprm, sm, bpm, s.onWantsSent, s.onPeersExhausted, proxy)
 
@@ -529,6 +533,16 @@ func (s *Session) wantBlocks(ctx context.Context, newks []cid.Cid) {
 		s.sw.BlocksRequested(newks)
 		// Tell the sessionWantSender that the blocks have been requested
 		s.sws.Add(newks)
+	}
+
+	// Return self peer id if proxy has the requested blocks
+	if s.proxy {
+		for _, k := range newks {
+			has, err := s.blockstore.Has(ctx, k)
+			if has && err == nil {
+				s.foundProvider(s.self, k)
+			}
+		}
 	}
 
 	// If we have discovered peers already, the sessionWantSender will

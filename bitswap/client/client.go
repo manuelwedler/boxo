@@ -165,7 +165,7 @@ func New(parent context.Context, network bsnet.BitSwapNetwork, bstore blockstore
 		proxy bool,
 		proxyDiscoveryCallback bsrm.ProxyDiscoveryCallback,
 		unforwardedSearchDelay time.Duration) bssm.Session {
-		return bssession.New(sessctx, sessmgr, id, spm, pqm, sim, pm, bpm, notif, provSearchDelay, rebroadcastDelay, self, proxy, proxyDiscoveryCallback, unforwardedSearchDelay)
+		return bssession.New(sessctx, sessmgr, id, spm, pqm, sim, pm, bpm, notif, provSearchDelay, rebroadcastDelay, self, proxy, proxyDiscoveryCallback, unforwardedSearchDelay, bstore)
 	}
 	sessionPeerManagerFactory := func(ctx context.Context, id uint64) bssession.SessionPeerManager {
 		return bsspm.New(id, network.ConnectionManager())
