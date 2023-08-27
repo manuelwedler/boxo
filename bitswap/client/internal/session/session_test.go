@@ -151,7 +151,7 @@ func (pm *fakePeerManager) BroadcastWantHaves(ctx context.Context, cids []cid.Ci
 	}
 }
 func (pm *fakePeerManager) SendCancels(ctx context.Context, cancels []cid.Cid) {}
-func (pm *fakePeerManager) ForwardWants(context.Context, []cid.Cid)            {}
+func (pm *fakePeerManager) ForwardWants(context.Context, []cid.Cid) error      { return nil }
 
 func TestSessionGetBlocks(t *testing.T) {
 	test.Flaky(t)

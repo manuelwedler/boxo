@@ -3,6 +3,7 @@ package peermanager
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 
 	fs "github.com/ipfs/boxo/bitswap/forwardstrategy"
@@ -131,15 +132,18 @@ func (pwm *peerWantManager) removePeer(p peer.ID) {
 }
 
 // forwardWants sends want-forwards to one peer.
-func (pwm *peerWantManager) forwardWants(wantHaves []cid.Cid) {
+func (pwm *peerWantManager) forwardWants(wantHaves []cid.Cid) error {
 	for _, c := range wantHaves {
 		p := pwm.fgm.GetSuccessorByStrategy(c)
 		log.Debugw("pwm forwardWants", "selectedSuccessor", p, "cids", wantHaves)
 		err := p.Validate()
 		if err == nil {
 			pwm.peerWants[p].peerQueue.AddForwardWants(wantHaves)
+		} else {
+			return errors.New("cannot forward because no successor is available")
 		}
 	}
+	return nil
 }
 
 // forwardHaves sends forward-haves to a specified peer.

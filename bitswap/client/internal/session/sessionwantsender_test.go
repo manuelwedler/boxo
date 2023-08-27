@@ -79,7 +79,7 @@ func (pm *mockPeerManager) has(p peer.ID, sid uint64) bool {
 
 func (*mockPeerManager) UnregisterSession(uint64)                      {}
 func (*mockPeerManager) BroadcastWantHaves(context.Context, []cid.Cid) {}
-func (*mockPeerManager) ForwardWants(context.Context, []cid.Cid)       {}
+func (*mockPeerManager) ForwardWants(context.Context, []cid.Cid) error { return nil }
 func (*mockPeerManager) SendCancels(context.Context, []cid.Cid)        {}
 
 func (pm *mockPeerManager) SendWants(ctx context.Context, p peer.ID, wantBlocks []cid.Cid, wantHaves []cid.Cid) {

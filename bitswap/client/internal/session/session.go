@@ -39,7 +39,7 @@ type PeerManager interface {
 	SendWants(ctx context.Context, peerId peer.ID, wantBlocks []cid.Cid, wantHaves []cid.Cid)
 	// ForwardWants sends want-forwards to one connected peer (used for
 	// session discovery)
-	ForwardWants(context.Context, []cid.Cid)
+	ForwardWants(context.Context, []cid.Cid) error
 	// BroadcastWantHaves sends want-haves to all connected peers (used for
 	// session discovery)
 	BroadcastWantHaves(context.Context, []cid.Cid)

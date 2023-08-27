@@ -23,7 +23,7 @@ const (
 
 type ForwardSender interface {
 	// ForwardWants sends want-forwards to one connected peer
-	ForwardWants(context.Context, []cid.Cid)
+	ForwardWants(context.Context, []cid.Cid) error
 	// ForwardHaves sends forward-haves to a specified peer.
 	ForwardHaves(ctx context.Context, to peer.ID, have cid.Cid, peers []peer.ID)
 }
@@ -79,20 +79,27 @@ func (rm *RelayManager) ProcessForwards(ctx context.Context, kt *keyTracker) {
 
 		rnd := rand.Float64()
 		if rnd <= rm.ProxyTransitionProb {
-			proxyDiscoveryCallback := func(provider peer.ID, received cid.Cid) {
-				if received != c {
-					log.Debugf("[recv] cid not equal proxy cid; cid=%s, peer=%s, proxycid=%s", received, provider, c)
-					return
-				}
-				rm.RelayHaves(ctx, kt.Peer, c, []peer.ID{provider})
-			}
-
-			session := rm.CreateProxySession(ctx, proxyDiscoveryCallback)
-			session.GetBlocks(ctx, []cid.Cid{c})
+			rm.startProxyPhase(ctx, kt.Peer, c)
 		} else {
-			rm.Forwarder.ForwardWants(ctx, []cid.Cid{c})
+			err := rm.Forwarder.ForwardWants(ctx, []cid.Cid{c})
+			if err != nil {
+				rm.startProxyPhase(ctx, kt.Peer, c)
+			}
 		}
 	}
+}
+
+func (rm *RelayManager) startProxyPhase(ctx context.Context, sender peer.ID, c cid.Cid) {
+	proxyDiscoveryCallback := func(provider peer.ID, received cid.Cid) {
+		if received != c {
+			log.Debugf("[recv] cid not equal proxy cid; cid=%s, peer=%s, proxycid=%s", received, provider, c)
+			return
+		}
+		rm.RelayHaves(ctx, sender, c, []peer.ID{provider})
+	}
+
+	session := rm.CreateProxySession(ctx, proxyDiscoveryCallback)
+	session.GetBlocks(ctx, []cid.Cid{c})
 }
 
 // ProcessForwardHaves relays the forward-haves to all interested peers in the ledger
