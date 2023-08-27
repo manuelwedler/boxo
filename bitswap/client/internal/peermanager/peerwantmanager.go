@@ -79,6 +79,8 @@ func (pwm *peerWantManager) addPeer(peerQueue PeerQueue, p peer.ID) {
 		peerQueue:  peerQueue,
 	}
 
+	pwm.fgm.AddPeer(p)
+
 	// Broadcast any live want-haves to the newly connected peer
 	if pwm.broadcastWants.Len() > 0 {
 		wants := pwm.broadcastWants.Keys()
@@ -88,6 +90,8 @@ func (pwm *peerWantManager) addPeer(peerQueue PeerQueue, p peer.ID) {
 
 // RemovePeer removes a peer and its associated wants from tracking
 func (pwm *peerWantManager) removePeer(p peer.ID) {
+	pwm.fgm.RemovePeer(p)
+
 	pws, ok := pwm.peerWants[p]
 	if !ok {
 		return
@@ -130,7 +134,11 @@ func (pwm *peerWantManager) removePeer(p peer.ID) {
 func (pwm *peerWantManager) forwardWants(wantHaves []cid.Cid) {
 	for _, c := range wantHaves {
 		p := pwm.fgm.GetSuccessorByStrategy(c)
-		pwm.peerWants[p].peerQueue.AddForwardWants(wantHaves)
+		log.Debugw("pwm forwardWants", "selectedSuccessor", p, "cids", wantHaves)
+		err := p.Validate()
+		if err == nil {
+			pwm.peerWants[p].peerQueue.AddForwardWants(wantHaves)
+		}
 	}
 }
 
@@ -139,7 +147,7 @@ func (pwm *peerWantManager) forwardHaves(to peer.ID, have cid.Cid, peers []peer.
 	if _, ok := pwm.peerWants[to]; ok {
 		pwm.peerWants[to].peerQueue.AddForwardHaves(to, have, peers)
 	} else {
-		log.Errorf("forwardHaves() called with peer %s but peer not found in peerWantManager", string(to))
+		log.Errorf("forwardHaves() called with peer %s but peer not found in peerWantManager", to)
 	}
 }
 
@@ -194,7 +202,7 @@ func (pwm *peerWantManager) sendWants(p peer.ID, wantBlocks []cid.Cid, wantHaves
 	pws, ok := pwm.peerWants[p]
 	if !ok {
 		// In practice this should never happen
-		log.Errorf("sendWants() called with peer %s but peer not found in peerWantManager", string(p))
+		log.Errorf("sendWants() called with peer %s but peer not found in peerWantManager", p)
 		return
 	}
 

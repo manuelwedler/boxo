@@ -118,7 +118,7 @@ func (fgm *forwardGraphManager) SelectNewSuccessors() {
 		fgm.removeSuccessor(s)
 	}
 	foundNew := true
-	for foundNew == true && len(fgm.successors) < fgm.successorTarget() {
+	for foundNew && len(fgm.successors) < fgm.successorTarget() {
 		foundNew = fgm.findOneNewSuccessor()
 	}
 
@@ -151,6 +151,7 @@ func (fgm *forwardGraphManager) findOneNewSuccessor() bool {
 
 // Called when we connect to a new peer.
 func (fgm *forwardGraphManager) AddPeer(p peer.ID) {
+	log.Debugw("fgm AddPeer", "peer", p)
 	fgm.lk.Lock()
 	defer fgm.lk.Unlock()
 

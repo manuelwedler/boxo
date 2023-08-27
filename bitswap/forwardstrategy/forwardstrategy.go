@@ -5,9 +5,12 @@ import (
 	"time"
 
 	"github.com/ipfs/go-cid"
+	logging "github.com/ipfs/go-log"
 	qpeerset "github.com/libp2p/go-libp2p-kad-dht/qpeerset"
 	peer "github.com/libp2p/go-libp2p/core/peer"
 )
+
+var log = logging.Logger("bs:fstrat")
 
 // Interface for implementing different forwarding strategies.
 type ForwardStrategy interface {
@@ -29,6 +32,7 @@ func (rf *RandomForward) SelectPeer(peers map[peer.ID]struct{}, c cid.Cid) peer.
 	for p := range peers {
 		available = append(available, p)
 	}
+	log.Debugw("rf SelectPeer", "peers", available, "cid", c)
 
 	if len(available) == 0 {
 		return peer.ID("")
@@ -44,6 +48,7 @@ func NewCloseCidForward() *CloseCidForward {
 }
 
 func (ccf *CloseCidForward) SelectPeer(peers map[peer.ID]struct{}, c cid.Cid) peer.ID {
+	log.Debugw("ccf SelectPeer", "peers", peers, "cid", c)
 	set := qpeerset.NewQueryPeerset(c.String())
 	for p := range peers {
 		set.TryAdd(p, peer.ID(""))

@@ -18,8 +18,11 @@ import (
 	bssim "github.com/ipfs/boxo/bitswap/client/internal/sessioninterestmanager"
 	bsrm "github.com/ipfs/boxo/bitswap/relaymanager"
 	exchange "github.com/ipfs/boxo/exchange"
+	logging "github.com/ipfs/go-log"
 	peer "github.com/libp2p/go-libp2p/core/peer"
 )
+
+var log = logging.Logger("bs:sessmgr")
 
 // Session is a session that is managed by the session manager
 type Session interface {
@@ -188,6 +191,7 @@ func (sm *SessionManager) ReceiveFrom(ctx context.Context, p peer.ID, blks []cid
 	forwardCids := make([]cid.Cid, 0, len(forwardHaves))
 
 	for c, forwardedPeers := range forwardHaves {
+		log.Debugw("ReceiveFrom <- forwardHaves", "from", p, "cid", c, "forwardedPeers", forwardedPeers)
 		forwardCids = append(forwardCids, c)
 
 		for _, forwardPeer := range forwardedPeers {
