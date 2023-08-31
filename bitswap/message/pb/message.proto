@@ -38,9 +38,14 @@ message Message {
     ForwardHave = 2;
   }
   message BlockPresence {
+    message AddressInfo {
+      bytes peerId = 1;
+      repeated bytes multiaddrs = 2;
+    }
+
     bytes cid = 1 [(gogoproto.customtype) = "Cid", (gogoproto.nullable) = false];
     BlockPresenceType type = 2;
-    repeated bytes peerIds = 3;
+    repeated AddressInfo addrinfo = 3;
   }
 
   Wantlist wantlist = 1 [(gogoproto.nullable) = false];

@@ -335,7 +335,7 @@ func (bs *Client) NotifyNewBlocks(ctx context.Context, blks ...blocks.Block) err
 }
 
 // receiveBlocksFrom process blocks received from the network
-func (bs *Client) receiveBlocksFrom(ctx context.Context, from peer.ID, blks []blocks.Block, haves []cid.Cid, dontHaves []cid.Cid, forwardHaves map[cid.Cid][]peer.ID) error {
+func (bs *Client) receiveBlocksFrom(ctx context.Context, from peer.ID, blks []blocks.Block, haves []cid.Cid, dontHaves []cid.Cid, forwardHaves map[cid.Cid][]peer.AddrInfo) error {
 	select {
 	case <-bs.process.Closing():
 		return errors.New("bitswap is closed")

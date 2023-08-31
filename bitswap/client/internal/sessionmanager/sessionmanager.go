@@ -28,7 +28,7 @@ var log = logging.Logger("bs:sessmgr")
 type Session interface {
 	exchange.Fetcher
 	ID() uint64
-	ReceiveFrom(peer.ID, []cid.Cid, []cid.Cid, []cid.Cid)
+	ReceiveFrom(peer.AddrInfo, []cid.Cid, []cid.Cid, []cid.Cid)
 	Shutdown()
 }
 
@@ -103,7 +103,7 @@ func (sm *SessionManager) NewSession(ctx context.Context,
 	defer span.End()
 
 	pm := sm.peerManagerFactory(ctx, id)
-	session := sm.sessionFactory(ctx, sm, id, pm, sm.sessionInterestManager, sm.peerManager, sm.blockPresenceManager, sm.notif, provSearchDelay, rebroadcastDelay, sm.self, false, func(peer.ID, cid.Cid) {}, unforwardedSearchDelay)
+	session := sm.sessionFactory(ctx, sm, id, pm, sm.sessionInterestManager, sm.peerManager, sm.blockPresenceManager, sm.notif, provSearchDelay, rebroadcastDelay, sm.self, false, func(peer.AddrInfo, cid.Cid) {}, unforwardedSearchDelay)
 
 	sm.sessLk.Lock()
 	if sm.sessions != nil { // check if SessionManager was shutdown
@@ -184,7 +184,7 @@ func (sm *SessionManager) GetNextSessionID() uint64 {
 }
 
 // ReceiveFrom is called when a new message is received
-func (sm *SessionManager) ReceiveFrom(ctx context.Context, p peer.ID, blks []cid.Cid, haves []cid.Cid, dontHaves []cid.Cid, forwardHaves map[cid.Cid][]peer.ID) {
+func (sm *SessionManager) ReceiveFrom(ctx context.Context, p peer.ID, blks []cid.Cid, haves []cid.Cid, dontHaves []cid.Cid, forwardHaves map[cid.Cid][]peer.AddrInfo) {
 	// Record block presence for HAVE / DONT_HAVE
 	sm.blockPresenceManager.ReceiveFrom(p, haves, dontHaves)
 
@@ -195,7 +195,7 @@ func (sm *SessionManager) ReceiveFrom(ctx context.Context, p peer.ID, blks []cid
 		forwardCids = append(forwardCids, c)
 
 		for _, forwardPeer := range forwardedPeers {
-			sm.blockPresenceManager.ReceiveFrom(forwardPeer, []cid.Cid{c}, []cid.Cid{})
+			sm.blockPresenceManager.ReceiveFrom(forwardPeer.ID, []cid.Cid{c}, []cid.Cid{})
 		}
 	}
 
@@ -231,7 +231,7 @@ func (sm *SessionManager) ReceiveFrom(ctx context.Context, p peer.ID, blks []cid
 		sm.sessLk.RUnlock()
 
 		if ok {
-			sess.ReceiveFrom(p, blks, haves, dontHaves)
+			sess.ReceiveFrom(peer.AddrInfo{ID: p}, blks, haves, dontHaves)
 		}
 	}
 

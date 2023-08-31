@@ -29,6 +29,15 @@ func (fpn *fakeProviderNetwork) ConnectTo(context.Context, peer.ID) error {
 	return fpn.connectError
 }
 
+func (fpn *fakeProviderNetwork) ConnectToAddr(context.Context, peer.AddrInfo) error {
+	time.Sleep(fpn.connectDelay)
+	return fpn.connectError
+}
+
+func (fpn *fakeProviderNetwork) GetAddrInfo(context.Context, peer.ID) peer.AddrInfo {
+	return peer.AddrInfo{}
+}
+
 func (fpn *fakeProviderNetwork) FindProvidersAsync(ctx context.Context, k cid.Cid, max int) <-chan peer.ID {
 	fpn.queriesMadeMutex.Lock()
 	fpn.queriesMade++

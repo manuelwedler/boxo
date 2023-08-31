@@ -55,7 +55,7 @@ func (mpq *mockPQ) ResponseReceived(ks []cid.Cid) {
 }
 func (mpq *mockPQ) AddForwardWants([]cid.Cid) {
 }
-func (mpq *mockPQ) AddForwardHaves(to peer.ID, have cid.Cid, peers []peer.ID) {
+func (mpq *mockPQ) AddForwardHaves(to peer.ID, have cid.Cid, peers []peer.AddrInfo) {
 }
 
 func clearSent(pqs map[peer.ID]PeerQueue) {

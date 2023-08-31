@@ -40,7 +40,7 @@ func (*fakeSession) GetBlocks(context.Context, []cid.Cid) (<-chan blocks.Block, 
 func (fs *fakeSession) ID() uint64 {
 	return fs.id
 }
-func (fs *fakeSession) ReceiveFrom(p peer.ID, ks []cid.Cid, wantBlocks []cid.Cid, wantHaves []cid.Cid) {
+func (fs *fakeSession) ReceiveFrom(p peer.AddrInfo, ks []cid.Cid, wantBlocks []cid.Cid, wantHaves []cid.Cid) {
 	fs.ks = append(fs.ks, ks...)
 	fs.wantBlocks = append(fs.wantBlocks, wantBlocks...)
 	fs.wantHaves = append(fs.wantHaves, wantHaves...)
@@ -135,21 +135,21 @@ func TestReceiveFrom(t *testing.T) {
 	sim.RecordSessionInterest(firstSession.ID(), []cid.Cid{block.Cid()})
 	sim.RecordSessionInterest(thirdSession.ID(), []cid.Cid{block.Cid()})
 
-	sm.ReceiveFrom(ctx, p, []cid.Cid{block.Cid()}, []cid.Cid{}, []cid.Cid{}, map[cid.Cid][]peer.ID{})
+	sm.ReceiveFrom(ctx, p, []cid.Cid{block.Cid()}, []cid.Cid{}, []cid.Cid{}, map[cid.Cid][]peer.AddrInfo{})
 	if len(firstSession.ks) == 0 ||
 		len(secondSession.ks) > 0 ||
 		len(thirdSession.ks) == 0 {
 		t.Fatal("should have received blocks but didn't")
 	}
 
-	sm.ReceiveFrom(ctx, p, []cid.Cid{}, []cid.Cid{block.Cid()}, []cid.Cid{}, map[cid.Cid][]peer.ID{})
+	sm.ReceiveFrom(ctx, p, []cid.Cid{}, []cid.Cid{block.Cid()}, []cid.Cid{}, map[cid.Cid][]peer.AddrInfo{})
 	if len(firstSession.wantBlocks) == 0 ||
 		len(secondSession.wantBlocks) > 0 ||
 		len(thirdSession.wantBlocks) == 0 {
 		t.Fatal("should have received want-blocks but didn't")
 	}
 
-	sm.ReceiveFrom(ctx, p, []cid.Cid{}, []cid.Cid{}, []cid.Cid{block.Cid()}, map[cid.Cid][]peer.ID{})
+	sm.ReceiveFrom(ctx, p, []cid.Cid{}, []cid.Cid{}, []cid.Cid{block.Cid()}, map[cid.Cid][]peer.AddrInfo{})
 	if len(firstSession.wantHaves) == 0 ||
 		len(secondSession.wantHaves) > 0 ||
 		len(thirdSession.wantHaves) == 0 {
@@ -190,7 +190,7 @@ func TestReceiveBlocksWhenManagerShutdown(t *testing.T) {
 	// wait for sessions to get removed
 	time.Sleep(10 * time.Millisecond)
 
-	sm.ReceiveFrom(ctx, p, []cid.Cid{block.Cid()}, []cid.Cid{}, []cid.Cid{}, map[cid.Cid][]peer.ID{})
+	sm.ReceiveFrom(ctx, p, []cid.Cid{block.Cid()}, []cid.Cid{}, []cid.Cid{}, map[cid.Cid][]peer.AddrInfo{})
 	if len(firstSession.ks) > 0 ||
 		len(secondSession.ks) > 0 ||
 		len(thirdSession.ks) > 0 {
@@ -227,7 +227,7 @@ func TestReceiveBlocksWhenSessionContextCancelled(t *testing.T) {
 	// wait for sessions to get removed
 	time.Sleep(10 * time.Millisecond)
 
-	sm.ReceiveFrom(ctx, p, []cid.Cid{block.Cid()}, []cid.Cid{}, []cid.Cid{}, map[cid.Cid][]peer.ID{})
+	sm.ReceiveFrom(ctx, p, []cid.Cid{block.Cid()}, []cid.Cid{}, []cid.Cid{}, map[cid.Cid][]peer.AddrInfo{})
 	if len(firstSession.ks) == 0 ||
 		len(secondSession.ks) > 0 ||
 		len(thirdSession.ks) == 0 {
@@ -253,7 +253,7 @@ func TestShutdown(t *testing.T) {
 	cids := []cid.Cid{block.Cid()}
 	firstSession := sm.NewSession(ctx, time.Second, delay.Fixed(time.Minute), time.Second).(*fakeSession)
 	sim.RecordSessionInterest(firstSession.ID(), cids)
-	sm.ReceiveFrom(ctx, p, []cid.Cid{}, []cid.Cid{}, cids, map[cid.Cid][]peer.ID{})
+	sm.ReceiveFrom(ctx, p, []cid.Cid{}, []cid.Cid{}, cids, map[cid.Cid][]peer.AddrInfo{})
 
 	if !bpm.HasKey(block.Cid()) {
 		t.Fatal("expected cid to be added to block presence manager")

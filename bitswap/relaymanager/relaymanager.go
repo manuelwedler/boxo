@@ -25,14 +25,14 @@ type ForwardSender interface {
 	// ForwardWants sends want-forwards to one connected peer
 	ForwardWants(ctx context.Context, cids []cid.Cid, exclude []peer.ID) error
 	// ForwardHaves sends forward-haves to a specified peer.
-	ForwardHaves(ctx context.Context, to peer.ID, have cid.Cid, peers []peer.ID)
+	ForwardHaves(ctx context.Context, to peer.ID, have cid.Cid, peers []peer.AddrInfo)
 }
 
 // CreateProxySession initializes a proxy session with the given context.
 type CreateProxySession func(ctx context.Context, proxyDiscoveryCallback ProxyDiscoveryCallback) exchange.Fetcher
 
 // ProxyDiscoveryCallback is called when a proxy session discovers peers for a CID
-type ProxyDiscoveryCallback func(peer.ID, cid.Cid)
+type ProxyDiscoveryCallback func(peer.AddrInfo, cid.Cid)
 
 // PeerTagger is an interface for tagging peers with metadata
 type PeerTagger interface {
@@ -90,12 +90,12 @@ func (rm *RelayManager) ProcessForwards(ctx context.Context, kt *keyTracker) {
 }
 
 func (rm *RelayManager) startProxyPhase(ctx context.Context, sender peer.ID, c cid.Cid) {
-	proxyDiscoveryCallback := func(provider peer.ID, received cid.Cid) {
+	proxyDiscoveryCallback := func(provider peer.AddrInfo, received cid.Cid) {
 		if received != c {
 			log.Debugf("[recv] cid not equal proxy cid; cid=%s, peer=%s, proxycid=%s", received, provider, c)
 			return
 		}
-		rm.RelayHaves(ctx, sender, c, []peer.ID{provider})
+		rm.RelayHaves(ctx, sender, c, []peer.AddrInfo{provider})
 	}
 
 	session := rm.CreateProxySession(ctx, proxyDiscoveryCallback)
@@ -103,7 +103,7 @@ func (rm *RelayManager) startProxyPhase(ctx context.Context, sender peer.ID, c c
 }
 
 // ProcessForwardHaves relays the forward-haves to all interested peers in the ledger
-func (rm *RelayManager) ProcessForwardHaves(ctx context.Context, forwardHaves map[cid.Cid][]peer.ID) {
+func (rm *RelayManager) ProcessForwardHaves(ctx context.Context, forwardHaves map[cid.Cid][]peer.AddrInfo) {
 	for c, ps := range forwardHaves {
 		interested := rm.Ledger.InterestedPeers(c)
 		for _, to := range interested {
@@ -112,7 +112,7 @@ func (rm *RelayManager) ProcessForwardHaves(ctx context.Context, forwardHaves ma
 	}
 }
 
-func (rm *RelayManager) RelayHaves(ctx context.Context, to peer.ID, have cid.Cid, peers []peer.ID) {
+func (rm *RelayManager) RelayHaves(ctx context.Context, to peer.ID, have cid.Cid, peers []peer.AddrInfo) {
 	rm.Forwarder.ForwardHaves(ctx, to, have, peers)
 	// For now, we just unprotect the connection when the first response is sent.
 	// As later responses could be pruned, a more sophisticated approach might be worth it.

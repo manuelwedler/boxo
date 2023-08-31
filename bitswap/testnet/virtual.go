@@ -22,6 +22,7 @@ import (
 	"github.com/libp2p/go-libp2p/core/routing"
 	mocknet "github.com/libp2p/go-libp2p/p2p/net/mock"
 	"github.com/libp2p/go-libp2p/p2p/protocol/ping"
+	"github.com/multiformats/go-multiaddr"
 )
 
 // VirtualNetwork generates a new testnet instance - a fake network that
@@ -354,6 +355,10 @@ func (nc *networkClient) ConnectTo(_ context.Context, p peer.ID) error {
 	return nil
 }
 
+func (nc *networkClient) ConnectToAddr(ctx context.Context, addr peer.AddrInfo) error {
+	return nc.ConnectTo(ctx, addr.ID)
+}
+
 func (nc *networkClient) DisconnectFrom(_ context.Context, p peer.ID) error {
 	nc.network.mu.Lock()
 	defer nc.network.mu.Unlock()
@@ -373,6 +378,13 @@ func (nc *networkClient) DisconnectFrom(_ context.Context, p peer.ID) error {
 	otherClient.receiver.PeerDisconnected(nc.local)
 	nc.PeerDisconnected(p)
 	return nil
+}
+
+func (nc *networkClient) GetAddrInfo(ctx context.Context, p peer.ID) peer.AddrInfo {
+	return peer.AddrInfo{
+		ID:    p,
+		Addrs: make([]multiaddr.Multiaddr, 0),
+	}
 }
 
 func (rq *receiverQueue) enqueue(m *message) {

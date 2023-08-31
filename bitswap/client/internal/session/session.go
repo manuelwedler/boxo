@@ -79,7 +79,9 @@ type ProviderFinder interface {
 	// FindProvidersAsync searches for peers that provide the given CID
 	FindProvidersAsync(ctx context.Context, k cid.Cid) <-chan peer.ID
 	// Allow session to connect to peer
-	ConnectTo(ctx context.Context, p peer.ID) error
+	ConnectToAddr(ctx context.Context, addr peer.AddrInfo) error
+	// Allow proxy session to access addr info from peer store
+	GetAddrInfo(context.Context, peer.ID) peer.AddrInfo
 }
 
 // opType is the kind of operation that is being processed by the event loop
@@ -209,7 +211,7 @@ func (s *Session) Shutdown() {
 }
 
 // ReceiveFrom receives incoming blocks from the given peer.
-func (s *Session) ReceiveFrom(from peer.ID, ks []cid.Cid, haves []cid.Cid, dontHaves []cid.Cid) {
+func (s *Session) ReceiveFrom(from peer.AddrInfo, ks []cid.Cid, haves []cid.Cid, dontHaves []cid.Cid) {
 	// The SessionManager tells each Session about all keys that it may be
 	// interested in. Here the Session filters the keys to the ones that this
 	// particular Session is interested in.
@@ -217,12 +219,12 @@ func (s *Session) ReceiveFrom(from peer.ID, ks []cid.Cid, haves []cid.Cid, dontH
 	ks = interestedRes[0]
 	haves = interestedRes[1]
 	dontHaves = interestedRes[2]
-	s.logReceiveFrom(from, ks, haves, dontHaves)
+	s.logReceiveFrom(from.ID, ks, haves, dontHaves)
 
 	// Let the relaymanager send forward-haves
 	if s.proxy {
 		// Proxies ignore blocks, because they are only interested in haves.
-		s.sws.Update(from, []cid.Cid{}, haves, dontHaves)
+		s.sws.Update(from.ID, []cid.Cid{}, haves, dontHaves)
 
 		uniqueHaves := cid.NewSet()
 		for _, c := range ks {
@@ -232,7 +234,7 @@ func (s *Session) ReceiveFrom(from peer.ID, ks []cid.Cid, haves []cid.Cid, dontH
 			uniqueHaves.Add(c)
 		}
 		for _, c := range uniqueHaves.Keys() {
-			s.foundProvider(from, c)
+			s.foundProvider(from.ID, c)
 		}
 	} else {
 		for _, c := range haves {
@@ -242,13 +244,13 @@ func (s *Session) ReceiveFrom(from peer.ID, ks []cid.Cid, haves []cid.Cid, dontH
 		}
 		go func() {
 			// For forward-have messages we might not be connected to the peer yet
-			err := s.providerFinder.ConnectTo(s.ctx, from)
+			err := s.providerFinder.ConnectToAddr(s.ctx, from)
 			if err != nil {
 				log.Debugf("[ReceiveFrom] failed to connect to provider %s: %s", from, err)
 				return
 			}
 			// Inform the session want sender that a message has been received
-			s.sws.Update(from, ks, haves, dontHaves)
+			s.sws.Update(from.ID, ks, haves, dontHaves)
 		}()
 	}
 
@@ -567,13 +569,16 @@ func (s *Session) wantBlocks(ctx context.Context, newks []cid.Cid) {
 // Send want-forwards to one connected peer
 func (s *Session) forwardWants(ctx context.Context, wants []cid.Cid) {
 	log.Debugw("forwardWants", "session", s.id, "cids", wants)
+	log.Debugw("start")
 
 	s.sim.RecordSessionForwardInterest(s.id, wants)
+	log.Debugw("further")
 
 	for _, c := range wants {
 		s.stopUnforwardedSearchTimer(c)
 		forwardTimer := time.NewTimer(s.unforwardedSearchDelay)
 		s.unforwardedSearchTimers[c] = forwardTimer
+		log.Debugw("cant stop")
 		go func(k cid.Cid) {
 			select {
 			case <-forwardTimer.C:
@@ -624,8 +629,9 @@ func (s *Session) resetIdleTick() {
 // Used to notify relaymanager
 func (s *Session) foundProvider(p peer.ID, c cid.Cid) {
 	if s.proxy {
+		addr := s.providerFinder.GetAddrInfo(s.ctx, p)
 		s.proxyDiscoverySuccessful = true
-		s.proxyDiscoveryCallback(p, c)
+		s.proxyDiscoveryCallback(addr, c)
 	}
 }
 

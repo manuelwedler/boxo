@@ -41,7 +41,11 @@ type BitSwapNetwork interface {
 	Stop()
 
 	ConnectTo(context.Context, peer.ID) error
+	ConnectToAddr(context.Context, peer.AddrInfo) error
 	DisconnectFrom(context.Context, peer.ID) error
+
+	// Returns the locally available AddrInfo for a peer
+	GetAddrInfo(context.Context, peer.ID) peer.AddrInfo
 
 	NewMessageSender(context.Context, peer.ID, *MessageSenderOpts) (MessageSender, error)
 

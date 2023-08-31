@@ -35,6 +35,8 @@ type findProviderRequest struct {
 // peers.
 type ProviderQueryNetwork interface {
 	ConnectTo(context.Context, peer.ID) error
+	ConnectToAddr(context.Context, peer.AddrInfo) error
+	GetAddrInfo(context.Context, peer.ID) peer.AddrInfo
 	FindProvidersAsync(context.Context, cid.Cid, int) <-chan peer.ID
 }
 
@@ -103,6 +105,16 @@ func New(ctx context.Context, network ProviderQueryNetwork) *ProviderQueryManage
 // Allow session to connect to peer
 func (pqm *ProviderQueryManager) ConnectTo(ctx context.Context, p peer.ID) error {
 	return pqm.network.ConnectTo(ctx, p)
+}
+
+// Allow session to connect to peer
+func (pqm *ProviderQueryManager) ConnectToAddr(ctx context.Context, addr peer.AddrInfo) error {
+	return pqm.network.ConnectToAddr(ctx, addr)
+}
+
+// Allow session to get addr info
+func (pqm *ProviderQueryManager) GetAddrInfo(ctx context.Context, p peer.ID) peer.AddrInfo {
+	return pqm.network.GetAddrInfo(ctx, p)
 }
 
 // Startup starts processing for the ProviderQueryManager.

@@ -90,7 +90,7 @@ type MessageQueue struct {
 	cancels      *cid.Set
 	priority     int32
 
-	forwardHaves map[cid.Cid][]peer.ID
+	forwardHaves map[cid.Cid][]peer.AddrInfo
 
 	// Dont touch any of these variables outside of run loop
 	sender                bsnet.MessageSender
@@ -254,7 +254,7 @@ func newMessageQueue(
 		dhTimeoutMgr:        dhTimeoutMgr,
 		maxMessageSize:      maxMsgSize,
 		forwardWants:        newRecallWantList(),
-		forwardHaves:        make(map[cid.Cid][]peer.ID),
+		forwardHaves:        make(map[cid.Cid][]peer.AddrInfo),
 		bcstWants:           newRecallWantList(),
 		peerWants:           newRecallWantList(),
 		cancels:             cid.NewSet(),
@@ -291,12 +291,12 @@ func (mq *MessageQueue) AddForwardWants(wantHaves []cid.Cid) {
 }
 
 // Add forward-haves
-func (mq *MessageQueue) AddForwardHaves(to peer.ID, have cid.Cid, peers []peer.ID) {
+func (mq *MessageQueue) AddForwardHaves(to peer.ID, have cid.Cid, peers []peer.AddrInfo) {
 	mq.wllock.Lock()
 	defer mq.wllock.Unlock()
 
 	if mq.forwardHaves[have] == nil {
-		mq.forwardHaves[have] = make([]peer.ID, 0, len(peers))
+		mq.forwardHaves[have] = make([]peer.AddrInfo, 0, len(peers))
 	}
 	mq.forwardHaves[have] = append(mq.forwardHaves[have], peers...)
 

@@ -369,8 +369,19 @@ func (bsnet *impl) ConnectTo(ctx context.Context, p peer.ID) error {
 	return bsnet.host.Connect(ctx, peer.AddrInfo{ID: p})
 }
 
+func (bsnet *impl) ConnectToAddr(ctx context.Context, addr peer.AddrInfo) error {
+	return bsnet.host.Connect(ctx, addr)
+}
+
 func (bsnet *impl) DisconnectFrom(ctx context.Context, p peer.ID) error {
 	return bsnet.host.Network().ClosePeer(p)
+}
+
+func (bsnet *impl) GetAddrInfo(ctx context.Context, p peer.ID) peer.AddrInfo {
+	return peer.AddrInfo{
+		ID:    p,
+		Addrs: bsnet.host.Peerstore().Addrs(p),
+	}
 }
 
 // FindProvidersAsync returns a channel of providers for the given key.

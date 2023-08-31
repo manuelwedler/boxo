@@ -42,7 +42,7 @@ func (fp *mockPeerQueue) ResponseReceived(ks []cid.Cid) {
 }
 func (fp *mockPeerQueue) AddForwardWants([]cid.Cid) {
 }
-func (fp *mockPeerQueue) AddForwardHaves(to peer.ID, have cid.Cid, peers []peer.ID) {
+func (fp *mockPeerQueue) AddForwardHaves(to peer.ID, have cid.Cid, peers []peer.AddrInfo) {
 }
 
 type fakePeerTagger struct {
@@ -353,12 +353,12 @@ type benchPeerQueue struct {
 func (*benchPeerQueue) Startup()  {}
 func (*benchPeerQueue) Shutdown() {}
 
-func (*benchPeerQueue) AddBroadcastWantHaves(whs []cid.Cid)                          {}
-func (*benchPeerQueue) AddWants(wbs []cid.Cid, whs []cid.Cid)                        {}
-func (*benchPeerQueue) AddCancels(cs []cid.Cid)                                      {}
-func (*benchPeerQueue) ResponseReceived(ks []cid.Cid)                                {}
-func (fp *benchPeerQueue) AddForwardWants([]cid.Cid)                                 {}
-func (fp *benchPeerQueue) AddForwardHaves(to peer.ID, have cid.Cid, peers []peer.ID) {}
+func (*benchPeerQueue) AddBroadcastWantHaves(whs []cid.Cid)                                {}
+func (*benchPeerQueue) AddWants(wbs []cid.Cid, whs []cid.Cid)                              {}
+func (*benchPeerQueue) AddCancels(cs []cid.Cid)                                            {}
+func (*benchPeerQueue) ResponseReceived(ks []cid.Cid)                                      {}
+func (fp *benchPeerQueue) AddForwardWants([]cid.Cid)                                       {}
+func (fp *benchPeerQueue) AddForwardHaves(to peer.ID, have cid.Cid, peers []peer.AddrInfo) {}
 
 // Simplistic benchmark to allow us to stress test
 func BenchmarkPeerManager(b *testing.B) {

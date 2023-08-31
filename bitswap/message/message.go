@@ -16,6 +16,7 @@ import (
 
 	u "github.com/ipfs/boxo/util"
 	"github.com/libp2p/go-libp2p/core/network"
+	ma "github.com/multiformats/go-multiaddr"
 )
 
 // BitSwapMessage is the basic interface for interacting building, encoding,
@@ -36,7 +37,7 @@ type BitSwapMessage interface {
 	// DontHaves returns the Cids for each DONT_HAVE
 	DontHaves() []cid.Cid
 	// ForwardHaves returns a list of peers that responded with a HAVE per Cid
-	ForwardHaves() map[cid.Cid][]peer.ID
+	ForwardHaves() map[cid.Cid][]peer.AddrInfo
 	// PendingBytes returns the number of outstanding bytes of data that the
 	// engine has yet to send to the client (because they didn't fit in this
 	// message)
@@ -79,7 +80,7 @@ type BitSwapMessage interface {
 	// AddDontHave adds a DONT_HAVE for the given Cid to the message
 	AddDontHave(cid.Cid)
 	// AddForwardHave adds a list of peers that have responded with a HAVE for the given Cid
-	AddForwardHave(cid.Cid, []peer.ID)
+	AddForwardHave(cid.Cid, []peer.AddrInfo)
 	// SetPendingBytes sets the number of bytes of data that are yet to be sent
 	// to the client (because they didn't fit in this message)
 	SetPendingBytes(int32)
@@ -163,7 +164,7 @@ type impl struct {
 	forwardlist         map[cid.Cid]*Entry
 	blocks              map[cid.Cid]blocks.Block
 	blockPresences      map[cid.Cid]pb.Message_BlockPresenceType // Should not include FORWARD_HAVES
-	blockPresencesPeers map[cid.Cid][]peer.ID                    // An entry here means that the message contains a FORWARD_HAVE
+	blockPresencesPeers map[cid.Cid][]peer.AddrInfo              // An entry here means that the message contains a FORWARD_HAVE
 	pendingBytes        int32
 }
 
@@ -179,7 +180,7 @@ func newMsg(full bool) *impl {
 		forwardlist:         make(map[cid.Cid]*Entry),
 		blocks:              make(map[cid.Cid]blocks.Block),
 		blockPresences:      make(map[cid.Cid]pb.Message_BlockPresenceType),
-		blockPresencesPeers: make(map[cid.Cid][]peer.ID),
+		blockPresencesPeers: make(map[cid.Cid][]peer.AddrInfo),
 	}
 }
 
@@ -199,7 +200,7 @@ func (m *impl) Clone() BitSwapMessage {
 		msg.blockPresences[k] = m.blockPresences[k]
 	}
 	for k := range m.blockPresencesPeers {
-		msg.blockPresencesPeers[k] = make([]peer.ID, 0, len(m.blockPresencesPeers[k]))
+		msg.blockPresencesPeers[k] = make([]peer.AddrInfo, 0, len(m.blockPresencesPeers[k]))
 		msg.blockPresencesPeers[k] = append(msg.blockPresencesPeers[k], m.blockPresencesPeers[k]...)
 	}
 	msg.pendingBytes = m.pendingBytes
@@ -274,11 +275,18 @@ func newMessageFromProto(pbm pb.Message) (BitSwapMessage, error) {
 			return nil, errCidMissing
 		}
 		if bi.Type == pb.Message_ForwardHave {
-			peers := make([]peer.ID, 0, len(bi.PeerIds))
-			for _, bs := range bi.PeerIds {
-				p, err := peer.IDFromBytes(bs)
+			peers := make([]peer.AddrInfo, 0, len(bi.Addrinfo))
+			for _, bia := range bi.Addrinfo {
+				addrs := make([]ma.Multiaddr, 0, len(bia.Multiaddrs))
+				for _, biam := range bia.Multiaddrs {
+					ma, err := ma.NewMultiaddrBytes(biam)
+					if err == nil {
+						addrs = append(addrs, ma)
+					}
+				}
+				p, err := peer.IDFromBytes(bia.PeerId)
 				if err == nil {
-					peers = append(peers, p)
+					peers = append(peers, peer.AddrInfo{ID: p, Addrs: addrs})
 				}
 			}
 			m.AddForwardHave(bi.Cid.Cid, peers)
@@ -340,11 +348,11 @@ func (m *impl) DontHaves() []cid.Cid {
 	return m.getBlockPresenceByType(pb.Message_DontHave)
 }
 
-func (m *impl) ForwardHaves() map[cid.Cid][]peer.ID {
-	cids := make(map[cid.Cid][]peer.ID)
+func (m *impl) ForwardHaves() map[cid.Cid][]peer.AddrInfo {
+	cids := make(map[cid.Cid][]peer.AddrInfo)
 	for c, ps := range m.blockPresencesPeers {
 		if cids[c] == nil {
-			cids[c] = make([]peer.ID, 0, len(m.blockPresencesPeers[c]))
+			cids[c] = make([]peer.AddrInfo, 0, len(m.blockPresencesPeers[c]))
 		}
 		cids[c] = append(cids[c], ps...)
 	}
@@ -472,9 +480,9 @@ func (m *impl) AddDontHave(c cid.Cid) {
 	m.AddBlockPresence(c, pb.Message_DontHave)
 }
 
-func (m *impl) AddForwardHave(c cid.Cid, ps []peer.ID) {
+func (m *impl) AddForwardHave(c cid.Cid, ps []peer.AddrInfo) {
 	if m.blockPresencesPeers[c] == nil {
-		m.blockPresencesPeers[c] = make([]peer.ID, 0, len(ps))
+		m.blockPresencesPeers[c] = make([]peer.AddrInfo, 0, len(ps))
 	}
 	m.blockPresencesPeers[c] = append(m.blockPresencesPeers[c], ps...)
 }
@@ -507,18 +515,22 @@ func BlockPresenceSize(c cid.Cid) int {
 	}).Size()
 }
 
-func BlockPresenceForwardSize(c cid.Cid, ps []peer.ID) int {
-	peers := make([][]byte, 0, len(ps))
-	for _, p := range ps {
-		mp, err := p.MarshalBinary()
+func BlockPresenceForwardSize(c cid.Cid, infos []peer.AddrInfo) int {
+	peers := make([]*pb.Message_BlockPresence_AddressInfo, 0, len(infos))
+	for _, info := range infos {
+		maddrs := make([][]byte, 0, len(info.Addrs))
+		for _, addr := range info.Addrs {
+			maddrs = append(maddrs, addr.Bytes())
+		}
+		mp, err := info.ID.MarshalBinary()
 		if err == nil {
-			peers = append(peers, mp)
+			peers = append(peers, &pb.Message_BlockPresence_AddressInfo{PeerId: mp, Multiaddrs: maddrs})
 		}
 	}
 	presence := &pb.Message_BlockPresence{
-		Cid:     pb.Cid{Cid: c},
-		Type:    pb.Message_ForwardHave,
-		PeerIds: peers,
+		Cid:      pb.Cid{Cid: c},
+		Type:     pb.Message_ForwardHave,
+		Addrinfo: peers,
 	}
 	return presence.Size()
 }
@@ -589,18 +601,22 @@ func (m *impl) ToProtoV1() *pb.Message {
 			Type: t,
 		})
 	}
-	for c, ps := range m.blockPresencesPeers {
-		peers := make([][]byte, 0, len(m.blockPresencesPeers[c]))
-		for _, p := range ps {
-			mp, err := p.Marshal()
+	for c, infos := range m.blockPresencesPeers {
+		peers := make([]*pb.Message_BlockPresence_AddressInfo, 0, len(infos))
+		for _, info := range infos {
+			maddrs := make([][]byte, 0, len(info.Addrs))
+			for _, addr := range info.Addrs {
+				maddrs = append(maddrs, addr.Bytes())
+			}
+			mp, err := info.ID.MarshalBinary()
 			if err == nil {
-				peers = append(peers, mp)
+				peers = append(peers, &pb.Message_BlockPresence_AddressInfo{PeerId: mp, Multiaddrs: maddrs})
 			}
 		}
 		pbm.BlockPresences = append(pbm.BlockPresences, pb.Message_BlockPresence{
-			Cid:     pb.Cid{Cid: c},
-			Type:    pb.Message_ForwardHave,
-			PeerIds: peers,
+			Cid:      pb.Cid{Cid: c},
+			Type:     pb.Message_ForwardHave,
+			Addrinfo: peers,
 		})
 	}
 
