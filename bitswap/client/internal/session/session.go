@@ -533,6 +533,10 @@ func (s *Session) wantBlocks(ctx context.Context, newks []cid.Cid) {
 		s.sim.RecordSessionInterest(s.id, newks)
 		// Tell the sessionWants tracker that that the wants have been requested
 		s.sw.BlocksRequested(newks)
+		if !s.proxy {
+			// Any new cids must go to live wants, so later periodic searches can work.
+			s.sw.MoveAllWantsLive()
+		}
 		// Tell the sessionWantSender that the blocks have been requested
 		s.sws.Add(newks)
 	}

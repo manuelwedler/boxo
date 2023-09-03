@@ -68,6 +68,18 @@ func (sw *sessionWants) GetNextWants() []cid.Cid {
 	return live
 }
 
+// Requestor session must be able to move all wants to the live queue,
+// so later periodic searches can work.
+func (sw *sessionWants) MoveAllWantsLive() {
+	now := time.Now()
+
+	for sw.toFetch.Len() > 0 {
+		c := sw.toFetch.Pop()
+		sw.liveWantsOrder = append(sw.liveWantsOrder, c)
+		sw.liveWants[c] = now
+	}
+}
+
 // WantsSent is called when wants are sent to a peer
 func (sw *sessionWants) WantsSent(ks []cid.Cid) {
 	now := time.Now()
