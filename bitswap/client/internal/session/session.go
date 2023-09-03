@@ -558,14 +558,16 @@ func (s *Session) wantBlocks(ctx context.Context, newks []cid.Cid) {
 	}
 
 	// No peers discovered yet, broadcast some want-haves
-	ks := s.sw.GetNextWants()
-	if len(ks) > 0 {
-		if s.proxy {
-			log.Infow("No peers - broadcasting", "session", s.id, "want-count", len(ks))
+	if s.proxy {
+		ks := s.sw.GetNextWants()
+		if len(ks) > 0 {
+			log.Infow("No peers - broadcasting", "proxy session", s.id, "want-count", len(ks))
 			s.broadcastWantHaves(ctx, ks)
-		} else {
-			log.Infow("No peers - forwarding", "session", s.id, "want-count", len(ks))
-			s.forwardWants(ctx, ks)
+		}
+	} else {
+		if len(newks) > 0 {
+			log.Infow("No peers - forwarding", "requestor session", s.id, "want-count", len(newks), "forward cid", newks[0])
+			s.forwardWants(ctx, []cid.Cid{newks[0]})
 		}
 	}
 }
