@@ -110,6 +110,8 @@ type sessionWantSender struct {
 	onPeersExhausted onPeersExhaustedFn
 	// Flag to indicate that this sessionWantSender is used by a proxy session.
 	proxy bool
+	// Current receiver for want-block messages of a requestor session
+	wantReceiver peer.ID
 }
 
 func newSessionWantSender(sid uint64, pm PeerManager, spm SessionPeerManager, canceller SessionWantsCanceller,
@@ -134,6 +136,7 @@ func newSessionWantSender(sid uint64, pm PeerManager, spm SessionPeerManager, ca
 		onSend:           onSend,
 		onPeersExhausted: onPeersExhausted,
 		proxy:            proxy,
+		wantReceiver:     peer.ID(""),
 	}
 
 	return sws
@@ -552,18 +555,22 @@ func (sws *sessionWantSender) sendNextWants(newlyAvailable []peer.ID) {
 				continue
 			}
 
-			// All the peers have indicated that they don't have the block
-			// corresponding to this want, so we must wait to discover more peers
-			if wi.bestPeer == "" {
-				// TODO: work this out in real time instead of using bestP?
-				continue
+			if sws.wantReceiver == peer.ID("") || wi.blockPresence[sws.wantReceiver] == BPDontHave {
+				// All the peers have indicated that they don't have the block
+				// corresponding to this want, so we must wait to discover more peers
+				if wi.bestPeer == "" {
+					// TODO: work this out in real time instead of using bestP?
+					continue
+				}
+				// When the wantReceiver does not have the block, we need a need a new receiver
+				sws.wantReceiver = wi.bestPeer
 			}
 
 			// Record that we are sending a want-block for this want to the peer
-			sws.setWantSentTo(c, wi.bestPeer)
+			sws.setWantSentTo(c, sws.wantReceiver)
 
 			// Send a want-block to the chosen peer
-			toSend.forPeer(wi.bestPeer).wantBlocks.Add(c)
+			toSend.forPeer(sws.wantReceiver).wantBlocks.Add(c)
 		}
 	}
 
