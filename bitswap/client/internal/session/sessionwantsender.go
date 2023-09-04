@@ -339,7 +339,9 @@ func (sws *sessionWantSender) processAvailability(availability map[peer.ID]bool)
 			sws.updateWantsPeerAvailability(p, isNowAvailable)
 			// Reset the count of consecutive DONT_HAVEs received from the
 			// peer
-			delete(sws.peerConsecutiveDontHaves, p)
+			if sws.proxy {
+				delete(sws.peerConsecutiveDontHaves, p)
+			}
 		}
 	}
 
@@ -389,7 +391,9 @@ func (sws *sessionWantSender) processUpdates(updates []update) []cid.Cid {
 				// manager
 				sws.spm.ProtectConnection(upd.from)
 			}
-			delete(sws.peerConsecutiveDontHaves, upd.from)
+			if sws.proxy {
+				delete(sws.peerConsecutiveDontHaves, upd.from)
+			}
 		}
 	}
 
@@ -438,7 +442,9 @@ func (sws *sessionWantSender) processUpdates(updates []update) []cid.Cid {
 			}
 
 			// Clear the consecutive DONT_HAVE count for the peer
-			delete(sws.peerConsecutiveDontHaves, upd.from)
+			if sws.proxy {
+				delete(sws.peerConsecutiveDontHaves, upd.from)
+			}
 			delete(prunePeers, upd.from)
 		}
 	}
