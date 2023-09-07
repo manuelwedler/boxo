@@ -332,11 +332,6 @@ func (s *Session) onWantsSent(p peer.ID, wantBlocks []cid.Cid, wantHaves []cid.C
 // onPeersExhausted is called when all available peers have sent DONT_HAVE for
 // a set of cids (or all peers become unavailable)
 func (s *Session) onPeersExhausted(ks []cid.Cid) {
-	// Proxy stops when it was successful with the initial broadcast to prevent asking the DHT
-	if s.proxy && s.proxyDiscoverySuccessful {
-		s.Shutdown()
-		return
-	}
 	s.nonBlockingEnqueue(op{op: opBroadcast, keys: ks})
 }
 
@@ -414,6 +409,12 @@ func (s *Session) broadcast(ctx context.Context, wants []cid.Cid) {
 	}
 
 	if s.proxy {
+		// Proxy stops when it was successful with the initial broadcast to prevent asking the DHT
+		if s.proxyDiscoverySuccessful {
+			s.Shutdown()
+			return
+		}
+
 		// Broadcast a want-have for the live wants to everyone we're connected to
 		s.broadcastWantHaves(ctx, wants)
 
