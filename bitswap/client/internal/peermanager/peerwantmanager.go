@@ -138,6 +138,8 @@ func (pwm *peerWantManager) forwardWants(wantHaves []cid.Cid, exclude []peer.ID)
 		log.Debugw("pwm forwardWants", "selectedSuccessor", p, "cids", wantHaves)
 		err := p.Validate()
 		if err == nil {
+			// TODO / the connection to this peer should be protected
+			// TODO / but we should unprotect when forwardhave is received from p
 			pwm.peerWants[p].peerQueue.AddForwardWants(wantHaves)
 		} else {
 			return errors.New("cannot forward because no successor is available")
