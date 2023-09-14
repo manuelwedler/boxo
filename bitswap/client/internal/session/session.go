@@ -2,6 +2,7 @@ package session
 
 import (
 	"context"
+	"sync"
 	"time"
 
 	"github.com/ipfs/boxo/bitswap/client/internal"
@@ -136,6 +137,7 @@ type Session struct {
 	initialSearchDelay      time.Duration
 	periodicSearchDelay     delay.D
 	unforwardedSearchTimers map[cid.Cid]*time.Timer
+	unfwdSrchLk             sync.RWMutex
 	unforwardedSearchDelay  time.Duration
 	// identifiers
 	notif notifications.PubSub
@@ -468,9 +470,9 @@ func (s *Session) findMorePeers(ctx context.Context, c cid.Cid) {
 		for p := range s.providerFinder.FindProvidersAsync(ctx, k) {
 			// When a provider indicates that it has a cid, it's equivalent to
 			// the providing peer sending a HAVE
-			s.sws.Update(p, nil, []cid.Cid{c}, nil)
+			s.sws.Update(p, nil, []cid.Cid{k}, nil)
 			if s.proxy {
-				s.foundProvider(p, c)
+				s.foundProvider(p, k)
 			}
 		}
 		// Proxy shuts down when DHT was queried once, since proxies work on one single cid
@@ -584,7 +586,9 @@ func (s *Session) forwardWants(ctx context.Context, wants []cid.Cid) {
 	for _, c := range wants {
 		s.stopUnforwardedSearchTimer(c)
 		forwardTimer := time.NewTimer(s.unforwardedSearchDelay)
+		s.unfwdSrchLk.Lock()
 		s.unforwardedSearchTimers[c] = forwardTimer
+		s.unfwdSrchLk.Unlock()
 		log.Debugw("cant stop")
 		go func(k cid.Cid) {
 			select {
@@ -602,7 +606,9 @@ func (s *Session) forwardWants(ctx context.Context, wants []cid.Cid) {
 }
 
 func (s *Session) stopUnforwardedSearchTimer(c cid.Cid) {
-	if s.unforwardedSearchTimers[c] != nil {
+	s.unfwdSrchLk.Lock()
+	defer s.unfwdSrchLk.Unlock()
+	if _, ok := s.unforwardedSearchTimers[c]; ok {
 		s.unforwardedSearchTimers[c].Stop()
 		delete(s.unforwardedSearchTimers, c)
 	}

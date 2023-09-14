@@ -180,6 +180,7 @@ func (fgm *forwardGraphManager) AddPeer(p peer.ID) {
 
 // Called when we disconnect from a peer.
 func (fgm *forwardGraphManager) RemovePeer(p peer.ID) {
+	log.Debugw("fgm RemovePeer", "peer", p)
 	fgm.lk.Lock()
 	defer fgm.lk.Unlock()
 

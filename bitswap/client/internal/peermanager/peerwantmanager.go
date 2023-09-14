@@ -153,7 +153,7 @@ func (pwm *peerWantManager) forwardHaves(to peer.ID, have cid.Cid, peers []peer.
 	if _, ok := pwm.peerWants[to]; ok {
 		pwm.peerWants[to].peerQueue.AddForwardHaves(to, have, peers)
 	} else {
-		log.Errorf("forwardHaves() called with peer %s but peer not found in peerWantManager", to)
+		log.Debugf("forwardHaves() called with peer %s but peer not found in peerWantManager, cid: %s", to, have.String())
 	}
 }
 

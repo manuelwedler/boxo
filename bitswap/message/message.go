@@ -349,9 +349,9 @@ func (m *impl) DontHaves() []cid.Cid {
 }
 
 func (m *impl) ForwardHaves() map[cid.Cid][]peer.AddrInfo {
-	cids := make(map[cid.Cid][]peer.AddrInfo)
+	cids := make(map[cid.Cid][]peer.AddrInfo, len(m.blockPresencesPeers))
 	for c, ps := range m.blockPresencesPeers {
-		if cids[c] == nil {
+		if _, ok := cids[c]; !ok {
 			cids[c] = make([]peer.AddrInfo, 0, len(m.blockPresencesPeers[c]))
 		}
 		cids[c] = append(cids[c], ps...)
@@ -481,7 +481,7 @@ func (m *impl) AddDontHave(c cid.Cid) {
 }
 
 func (m *impl) AddForwardHave(c cid.Cid, ps []peer.AddrInfo) {
-	if m.blockPresencesPeers[c] == nil {
+	if _, ok := m.blockPresencesPeers[c]; !ok {
 		m.blockPresencesPeers[c] = make([]peer.AddrInfo, 0, len(ps))
 	}
 	m.blockPresencesPeers[c] = append(m.blockPresencesPeers[c], ps...)

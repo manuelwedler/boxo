@@ -41,7 +41,7 @@ type PeerTagger interface {
 }
 
 func getConnectionProtectionTag(id cid.Cid) string {
-	return fmt.Sprint("bs-rel-", id)
+	return fmt.Sprint("bs-rel-", id.String())
 }
 
 type RelayManager struct {
@@ -140,7 +140,7 @@ func (rl *RelayLedger) Update(kt *keyTracker) {
 	defer rl.lk.Unlock()
 
 	for _, c := range kt.T {
-		if rl.items[c] == nil {
+		if _, ok := rl.items[c]; !ok {
 			// Add to the registry
 			rl.items[c] = make(map[peer.ID]bool, 1)
 		}

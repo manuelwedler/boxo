@@ -295,7 +295,7 @@ func (mq *MessageQueue) AddForwardHaves(to peer.ID, have cid.Cid, peers []peer.A
 	mq.wllock.Lock()
 	defer mq.wllock.Unlock()
 
-	if mq.forwardHaves[have] == nil {
+	if _, ok := mq.forwardHaves[have]; !ok {
 		mq.forwardHaves[have] = make([]peer.AddrInfo, 0, len(peers))
 	}
 	mq.forwardHaves[have] = append(mq.forwardHaves[have], peers...)
@@ -751,6 +751,16 @@ func (mq *MessageQueue) extractOutgoingMessage(supportsHave bool) (bsmsg.BitSwap
 	peerEntries := mq.peerWants.pending.Entries()
 	forwardEntries := mq.forwardWants.pending.Entries()
 	bcstEntries := mq.bcstWants.pending.Entries()
+
+	fwdHaveEntries := make(map[cid.Cid][]peer.AddrInfo, len(mq.forwardHaves))
+	for c, haves := range mq.forwardHaves {
+		if _, ok := fwdHaveEntries[c]; !ok {
+			fwdHaveEntries[c] = make([]peer.AddrInfo, 0, len(mq.forwardHaves[c]))
+		}
+		fwdHaveEntries[c] = append(fwdHaveEntries[c], haves...)
+	}
+	addedForwardHaves := make([]cid.Cid, 0, len(mq.forwardHaves))
+
 	cancels := mq.cancels.Keys()
 	if !supportsHave {
 		filteredPeerEntries := peerEntries[:0]
@@ -835,10 +845,10 @@ func (mq *MessageQueue) extractOutgoingMessage(supportsHave bool) (bsmsg.BitSwap
 	}
 
 	// Add each forward-have to the message
-	for c, peers := range mq.forwardHaves {
+	for c, peers := range fwdHaveEntries {
 		mq.msg.AddForwardHave(c, peers)
 		msgSize += bsmsg.BlockPresenceForwardSize(c, peers)
-		delete(mq.forwardHaves, c)
+		addedForwardHaves = append(addedForwardHaves, c)
 
 		if msgSize >= mq.maxMessageSize {
 			goto FINISH
@@ -863,6 +873,10 @@ FINISH:
 			mq.msg.RemoveForward(e.Cid)
 			forwardEntries[i].Cid = cid.Undef
 		}
+	}
+
+	for _, c := range addedForwardHaves {
+		delete(mq.forwardHaves, c)
 	}
 
 	for i, e := range bcstEntries[:sentBcstEntries] {
