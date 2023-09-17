@@ -10,6 +10,7 @@ import (
 
 	bsmsg "github.com/ipfs/boxo/bitswap/message"
 	"github.com/ipfs/boxo/bitswap/network/internal"
+	"github.com/libp2p/go-libp2p/core/peerstore"
 
 	cid "github.com/ipfs/go-cid"
 	logging "github.com/ipfs/go-log"
@@ -35,8 +36,13 @@ var minSendTimeout = 10 * time.Second
 var sendLatency = 2 * time.Second
 var minSendRate = (100 * 1000) / 8 // 100kbit/s
 
+type ContentAndPeerRouting interface {
+	routing.ContentRouting
+	routing.PeerRouting
+}
+
 // NewFromIpfsHost returns a BitSwapNetwork supported by underlying IPFS host.
-func NewFromIpfsHost(host host.Host, r routing.ContentRouting, opts ...NetOpt) BitSwapNetwork {
+func NewFromIpfsHost(host host.Host, r ContentAndPeerRouting, opts ...NetOpt) BitSwapNetwork {
 	s := processSettings(opts...)
 
 	bitswapNetwork := impl{
@@ -73,7 +79,7 @@ type impl struct {
 	stats Stats
 
 	host          host.Host
-	routing       routing.ContentRouting
+	routing       ContentAndPeerRouting
 	connectEvtMgr *connectEventManager
 
 	protocolBitswapNoVers  protocol.ID
@@ -366,11 +372,29 @@ func (bsnet *impl) Stop() {
 }
 
 func (bsnet *impl) ConnectTo(ctx context.Context, p peer.ID) error {
-	return bsnet.host.Connect(ctx, peer.AddrInfo{ID: p})
+	err := bsnet.host.Connect(ctx, peer.AddrInfo{ID: p})
+	if err == nil {
+		return nil
+	}
+	ai, err := bsnet.routing.FindPeer(ctx, p)
+	if err != nil {
+		return err
+	}
+	bsnet.host.Peerstore().AddAddrs(p, ai.Addrs, peerstore.AddressTTL)
+	return bsnet.host.Connect(ctx, ai)
 }
 
 func (bsnet *impl) ConnectToAddr(ctx context.Context, addr peer.AddrInfo) error {
-	return bsnet.host.Connect(ctx, addr)
+	err := bsnet.host.Connect(ctx, addr)
+	if err == nil {
+		return nil
+	}
+	ai, err := bsnet.routing.FindPeer(ctx, addr.ID)
+	if err != nil {
+		return err
+	}
+	bsnet.host.Peerstore().AddAddrs(addr.ID, ai.Addrs, peerstore.AddressTTL)
+	return bsnet.host.Connect(ctx, ai)
 }
 
 func (bsnet *impl) DisconnectFrom(ctx context.Context, p peer.ID) error {
