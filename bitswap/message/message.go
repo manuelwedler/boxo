@@ -452,7 +452,7 @@ func (m *impl) addForwardEntry(c cid.Cid, priority int32, cancel bool) int {
 			Priority: priority,
 			WantType: pb.Message_Wantlist_Forward,
 		},
-		SendDontHave: false,
+		SendDontHave: true,
 		Cancel:       cancel,
 	}
 	m.forwardlist[c] = e

@@ -151,6 +151,7 @@ func (pwm *peerWantManager) forwardWants(wantHaves []cid.Cid, exclude []peer.ID)
 // forwardHaves sends forward-haves to a specified peer.
 func (pwm *peerWantManager) forwardHaves(to peer.ID, have cid.Cid, peers []peer.AddrInfo) {
 	if _, ok := pwm.peerWants[to]; ok {
+		log.Debugw("pwm forwardHaves", "to", to, "cid", have, "providers", peers)
 		pwm.peerWants[to].peerQueue.AddForwardHaves(to, have, peers)
 	} else {
 		log.Debugf("forwardHaves() called with peer %s but peer not found in peerWantManager, cid: %s", to, have.String())

@@ -79,10 +79,13 @@ func (rm *RelayManager) ProcessForwards(ctx context.Context, kt *keyTracker) {
 
 		rnd := rand.Float64()
 		if rnd <= rm.ProxyTransitionProb {
+			log.Debugf("processing forwards: starting proxy phase; cid=%s, from=%s", c, kt.Peer)
 			rm.startProxyPhase(ctx, kt.Peer, c)
 		} else {
+			log.Debugf("processing forwards: forwarding further; cid=%s, from=%s", c, kt.Peer)
 			err := rm.Forwarder.ForwardWants(ctx, []cid.Cid{c}, []peer.ID{kt.Peer})
 			if err != nil {
+				log.Debugf("processing forwards: forward error; starting proxy phase; cid=%s, from=%s, err=%s", c, kt.Peer, err)
 				rm.startProxyPhase(ctx, kt.Peer, c)
 			}
 		}
@@ -95,6 +98,7 @@ func (rm *RelayManager) startProxyPhase(ctx context.Context, sender peer.ID, c c
 			log.Debugf("[recv] cid not equal proxy cid; cid=%s, peer=%s, proxycid=%s", received, provider, c)
 			return
 		}
+		log.Debugf("discovery callback; cid=%s, peer=%s, foundprovider=%s", received, sender, provider.ID)
 		rm.RelayHaves(ctx, sender, c, []peer.AddrInfo{provider})
 	}
 
@@ -113,6 +117,7 @@ func (rm *RelayManager) ProcessForwardHaves(ctx context.Context, forwardHaves ma
 }
 
 func (rm *RelayManager) RelayHaves(ctx context.Context, to peer.ID, have cid.Cid, peers []peer.AddrInfo) {
+	log.Debugf("relay haves; cid=%s, peer=%s, foundproviders=%s", have, to, peers)
 	rm.Forwarder.ForwardHaves(ctx, to, have, peers)
 	// For now, we just unprotect the connection when the first response is sent.
 	// As later responses could be pruned, a more sophisticated approach might be worth it.

@@ -473,6 +473,8 @@ func (s *Session) findMorePeers(ctx context.Context, c cid.Cid) {
 			s.sws.Update(p, nil, []cid.Cid{k}, nil)
 			if s.proxy {
 				s.foundProvider(p, k)
+			} else {
+				s.providerFinder.ConnectToAddr(ctx, peer.AddrInfo{ID: p})
 			}
 		}
 		// Proxy shuts down when DHT was queried once, since proxies work on one single cid
@@ -578,10 +580,8 @@ func (s *Session) wantBlocks(ctx context.Context, newks []cid.Cid) {
 // Send want-forwards to one connected peer
 func (s *Session) forwardWants(ctx context.Context, wants []cid.Cid) {
 	log.Debugw("forwardWants", "session", s.id, "cids", wants)
-	log.Debugw("start")
 
 	s.sim.RecordSessionForwardInterest(s.id, wants)
-	log.Debugw("further")
 
 	for _, c := range wants {
 		s.stopUnforwardedSearchTimer(c)
@@ -589,7 +589,6 @@ func (s *Session) forwardWants(ctx context.Context, wants []cid.Cid) {
 		s.unfwdSrchLk.Lock()
 		s.unforwardedSearchTimers[c] = forwardTimer
 		s.unfwdSrchLk.Unlock()
-		log.Debugw("cant stop")
 		go func(k cid.Cid) {
 			select {
 			case <-forwardTimer.C:
