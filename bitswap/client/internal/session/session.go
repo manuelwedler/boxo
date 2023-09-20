@@ -244,16 +244,16 @@ func (s *Session) ReceiveFrom(from peer.AddrInfo, ks []cid.Cid, haves []cid.Cid,
 			// we can stop the timer.
 			s.stopUnforwardedSearchTimer(c)
 		}
-		go func() {
+		go func(cids []cid.Cid, p peer.AddrInfo, hs []cid.Cid, dhs []cid.Cid) {
 			// For forward-have messages we might not be connected to the peer yet
-			err := s.providerFinder.ConnectToAddr(s.ctx, from)
+			err := s.providerFinder.ConnectToAddr(s.ctx, p)
 			if err != nil {
-				log.Debugf("[ReceiveFrom] failed to connect to provider %s: %s", from, err)
+				log.Debugf("[ReceiveFrom] failed to connect to provider %s: %s", p.ID, err)
 				return
 			}
 			// Inform the session want sender that a message has been received
-			s.sws.Update(from.ID, ks, haves, dontHaves)
-		}()
+			s.sws.Update(p.ID, cids, hs, dhs)
+		}(ks, from, haves, dontHaves)
 	}
 
 	if len(ks) == 0 {
@@ -473,8 +473,6 @@ func (s *Session) findMorePeers(ctx context.Context, c cid.Cid) {
 			s.sws.Update(p, nil, []cid.Cid{k}, nil)
 			if s.proxy {
 				s.foundProvider(p, k)
-			} else {
-				s.providerFinder.ConnectToAddr(ctx, peer.AddrInfo{ID: p})
 			}
 		}
 		// Proxy shuts down when DHT was queried once, since proxies work on one single cid

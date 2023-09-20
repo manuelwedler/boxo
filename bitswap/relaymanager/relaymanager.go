@@ -93,13 +93,16 @@ func (rm *RelayManager) ProcessForwards(ctx context.Context, kt *keyTracker) {
 }
 
 func (rm *RelayManager) startProxyPhase(ctx context.Context, sender peer.ID, c cid.Cid) {
+	innerCtx := ctx
+	returnTo := sender
+	k := c
 	proxyDiscoveryCallback := func(provider peer.AddrInfo, received cid.Cid) {
-		if received != c {
-			log.Debugf("[recv] cid not equal proxy cid; cid=%s, peer=%s, proxycid=%s", received, provider, c)
+		if received != k {
+			log.Debugf("[recv] cid not equal proxy cid; cid=%s, peer=%s, proxycid=%s", received, provider, k)
 			return
 		}
-		log.Debugf("discovery callback; cid=%s, peer=%s, foundprovider=%s", received, sender, provider.ID)
-		rm.RelayHaves(ctx, sender, c, []peer.AddrInfo{provider})
+		log.Debugf("discovery callback; cid=%s, peer=%s, foundprovider=%s", received, returnTo, provider.ID)
+		rm.RelayHaves(innerCtx, returnTo, k, []peer.AddrInfo{provider})
 	}
 
 	session := rm.CreateProxySession(ctx, proxyDiscoveryCallback)

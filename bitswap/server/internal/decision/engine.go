@@ -743,7 +743,7 @@ func (e *Engine) MessageReceived(ctx context.Context, p peer.ID, m bsmsg.BitSwap
 			continue
 		}
 
-		log.Debugf("Updating tracker to start a new relay session for %s, %d", entry.Cid, entry.Priority)
+		log.Debugf("Updating tracker to add cid %s (prio %d) to relay manager", entry.Cid, entry.Priority)
 		relayKs.UpdateTracker(entry.Cid)
 		filteredForwards = append(filteredForwards, entry)
 	}

@@ -255,6 +255,7 @@ func (pqm *ProviderQueryManager) findProviderWorker() {
 			providers := pqm.network.FindProvidersAsync(findProviderCtx, k, maxProviders)
 			wg := &sync.WaitGroup{}
 			for p := range providers {
+				log.Debugf("Found provider %s for cid: %s", p, k.String())
 				wg.Add(1)
 				go func(p peer.ID) {
 					defer wg.Done()

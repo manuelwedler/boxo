@@ -575,6 +575,16 @@ func (mq *MessageQueue) sendMessage() {
 	forwardlist := message.Forwardlist()
 	mq.logOutgoingMessage(wantlist)
 	mq.logOutgoingMessage(forwardlist)
+	forwardHaves := message.ForwardHaves()
+	for k, peers := range forwardHaves {
+		log.Debugw("sent message",
+			"type", "FORWARD_HAVE",
+			"cid", k,
+			"providers", peers,
+			"local", mq.network.Self(),
+			"to", mq.p,
+		)
+	}
 
 	if err := sender.SendMsg(mq.ctx, message); err != nil {
 		// If the message couldn't be sent, the networking layer will
