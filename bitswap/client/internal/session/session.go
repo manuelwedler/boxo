@@ -429,7 +429,7 @@ func (s *Session) broadcast(ctx context.Context, wants []cid.Cid) {
 			log.Debugw("FindMorePeers", "session", s.id, "cid", wants[0], "pending", len(wants))
 			s.findMorePeers(ctx, wants[0])
 		}
-	} else {
+	} else if len(wants) > 0 {
 		s.forwardWants(ctx, []cid.Cid{wants[0]})
 	}
 
