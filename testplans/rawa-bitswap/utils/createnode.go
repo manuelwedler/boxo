@@ -48,13 +48,17 @@ func CreateBlockstore(ctx context.Context, bstoreDelay time.Duration) (blockstor
 		blockstore.DefaultCacheOpts())
 }
 
-func ClearBlockstore(ctx context.Context, bstore blockstore.Blockstore) error {
+func ClearBlockstore(ctx context.Context, bstore blockstore.Blockstore, exclude cid.Cid) error {
 	ks, err := bstore.AllKeysChan(ctx)
 	if err != nil {
 		return err
 	}
 	g := errgroup.Group{}
 	for k := range ks {
+		// Use hash to compare because they use different multicodecs
+		if k.Hash().String() == exclude.Hash().String() {
+			continue
+		}
 		c := k
 		g.Go(func() error {
 			return bstore.DeleteBlock(ctx, c)

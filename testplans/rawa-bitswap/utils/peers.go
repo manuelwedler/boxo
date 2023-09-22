@@ -5,7 +5,6 @@ import (
 	"context"
 	"fmt"
 	"math/rand"
-	"time"
 
 	"github.com/libp2p/go-libp2p/core/host"
 	"github.com/libp2p/go-libp2p/core/peer"
@@ -24,7 +23,7 @@ func AddrInfosFromChan(peerCh chan *peer.AddrInfo, count int) ([]peer.AddrInfo, 
 	return ais, nil
 }
 
-func DialOtherPeers(ctx context.Context, self host.Host, ais []peer.AddrInfo, count int) ([]peer.AddrInfo, error) {
+func DialOtherPeers(ctx context.Context, self host.Host, ais []peer.AddrInfo, count int, rSeed int64) ([]peer.AddrInfo, error) {
 	// Grab list of other peers that are available for this Run
 	var toDial []peer.AddrInfo
 	for _, ai := range ais {
@@ -45,7 +44,7 @@ func DialOtherPeers(ctx context.Context, self host.Host, ais []peer.AddrInfo, co
 	// Select randomly peers according to count
 	var randDial []peer.AddrInfo
 	for len(randDial) < count && len(randDial) < len(toDial) {
-		rand.Seed(time.Now().UnixNano())
+		rand.Seed(rSeed)
 		perm := rand.Perm(len(toDial))
 		randDial = append(randDial, toDial[perm[0]])
 	}

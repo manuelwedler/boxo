@@ -29,6 +29,7 @@ instances = { min = 2, max = 100, default = 2 }
 
   [testcases.params]
   debug = { type = "bool", desc = "show debug logs", default = false }
-  timeout_secs = { type = "int", desc = "timeout", unit = "seconds", default = 600 }
+  timeout_secs = { type = "int", desc = "timeout for each individual run", unit = "seconds", default = 90 }
   run_count = { type = "int", desc = "number of iterations of the test", unit = "iteration", default = 1 }
   conn_per_node = { type = "int", desc = "creates connections to a number of peers at random", default = 2 }
+  all_mode = { type = "bool", desc = "if enabled all nodes are both requestor and provider, if disabled there is 1 requestor and 1 provider", default = false }

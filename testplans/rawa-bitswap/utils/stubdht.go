@@ -12,16 +12,17 @@ import (
 )
 
 type stubDhtClient struct {
-	providers   map[cid.Cid][]peer.AddrInfo
-	peers       map[peer.ID]peer.AddrInfo
-	accessDelay delay.D
+	providers map[cid.Cid][]peer.AddrInfo
+	peers     map[peer.ID]peer.AddrInfo
+	delayTime time.Duration
+	randSeed  int64
 }
 
 func (d *stubDhtClient) FindProvidersAsync(ctx context.Context, k cid.Cid, _ int) <-chan peer.AddrInfo {
 	out := make(chan peer.AddrInfo, len(d.providers[k]))
 	go func() {
 		defer close(out)
-		d.accessDelay.Wait()
+		d.wait()
 		for _, p := range d.providers[k] {
 			// Note that ipfs_impl of network interface only returns peer.ID from the peer.AddrInfo
 			select {
@@ -46,7 +47,7 @@ func (d *stubDhtClient) AddProviderData(c cid.Cid, ais []peer.AddrInfo) {
 }
 
 func (d *stubDhtClient) FindPeer(ctx context.Context, p peer.ID) (peer.AddrInfo, error) {
-	d.accessDelay.Wait()
+	d.wait()
 	select {
 	case <-ctx.Done():
 		return peer.AddrInfo{}, ctx.Err()
@@ -61,17 +62,22 @@ func (d *stubDhtClient) AddPeerData(ais []peer.AddrInfo) {
 	}
 }
 
-// ConstructStubDhtClient creates an Routing client which returns the predefined data after an delay
-func ConstructStubDhtClient(delayTime time.Duration) *stubDhtClient {
+func (d *stubDhtClient) wait() {
 	// Add a uniform distributed variation of 10 % to the delay
-	randSource := rand.NewSource(time.Now().UnixNano())
-	minDelay := time.Duration(float64(delayTime) * 0.9)
-	maxVariation := time.Duration(float64(delayTime) * 0.2)
-	accessDelay := delay.VariableUniform(minDelay, maxVariation, rand.New(randSource))
+	minDelay := time.Duration(float64(d.delayTime) * 0.9)
+	maxVariation := time.Duration(float64(d.delayTime) * 0.2)
+	rand.Seed(time.Now().Unix() + d.randSeed)
+	accessDelay := delay.VariableUniform(minDelay, maxVariation, rand.New(rand.NewSource(rand.Int63())))
+	accessDelay.Wait()
+}
+
+// ConstructStubDhtClient creates an Routing client which returns the predefined data after an delay
+func ConstructStubDhtClient(delayTime time.Duration, seed int64) *stubDhtClient {
 	return &stubDhtClient{
-		providers:   make(map[cid.Cid][]peer.AddrInfo),
-		peers:       make(map[peer.ID]peer.AddrInfo),
-		accessDelay: accessDelay,
+		providers: make(map[cid.Cid][]peer.AddrInfo),
+		peers:     make(map[peer.ID]peer.AddrInfo),
+		delayTime: delayTime,
+		randSeed:  seed,
 	}
 }
 
