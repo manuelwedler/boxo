@@ -13,6 +13,10 @@ import (
 	libp2p "github.com/libp2p/go-libp2p"
 	"github.com/libp2p/go-libp2p/core/host"
 	"github.com/libp2p/go-libp2p/core/peer"
+
+	noise "github.com/libp2p/go-libp2p/p2p/security/noise"
+	libp2pquic "github.com/libp2p/go-libp2p/p2p/transport/quic"
+	"github.com/libp2p/go-libp2p/p2p/transport/tcp"
 	"github.com/testground/sdk-go/network"
 	"github.com/testground/sdk-go/run"
 	"github.com/testground/sdk-go/runtime"
@@ -56,14 +60,21 @@ func runRaWaTest(runenv *runtime.RunEnv, initCtx *run.InitContext) error {
 
 	// Set up
 	runenv.RecordMessage("running RaWa-Bitswap test")
-	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	// ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	client := sync.MustBoundClient(ctx, runenv)
+
+	// Wait until all instances in this test run have signalled.
+	initCtx.MustWaitAllInstancesInitialized(ctx)
 
 	// Signal that this node is in the given state, and wait for all peers to
 	// send the same signal
 	signalAndWaitForAll := func(state string) error {
 		_, err := client.SignalAndWait(ctx, sync.State(state), runenv.TestInstanceCount)
+		if err != nil {
+			err = fmt.Errorf("error during waiting for state %s: %s", state, err)
+		}
 		return err
 	}
 
@@ -89,9 +100,26 @@ func runRaWaTest(runenv *runtime.RunEnv, initCtx *run.InitContext) error {
 		RoutingPolicy:  network.AllowAll,
 	})
 
-	h, err := libp2p.New()
+	ip := initCtx.NetClient.MustGetDataNetworkIP()
+	var options []libp2p.Option
+	options = append(options, libp2p.Transport(tcp.NewTCPTransport))
+	options = append(options, libp2p.ListenAddrStrings(fmt.Sprintf("/ip4/%s/tcp/0", ip)))
+
+	options = append(options, libp2p.Transport(libp2pquic.NewTransport))
+	options = append(options, libp2p.ListenAddrStrings(fmt.Sprintf("/ip4/%s/udp/0/quic", ip)))
+	options = append(options, libp2p.Security(noise.ID, noise.New))
+
+	// listen, err := multiaddr.NewMultiaddr(fmt.Sprintf("/ip4/%s/tcp/%d", initCtx.NetClient.MustGetDataNetworkIP().String(), 3333+initCtx.GlobalSeq))
+	// if err != nil {
+	// 	return err
+	// }
+	// h, err := libp2p.New(libp2p.ListenAddrs(listen))
+
+	// h, err := libp2p.New()
+
+	h, err := libp2p.New(options...)
 	if err != nil {
-		return err
+		return fmt.Errorf("error during libp2p node creation: %s", err)
 	}
 	defer h.Close()
 	runenv.RecordMessage("I am %s with addrs: %v", h.ID(), h.Addrs())
@@ -100,7 +128,7 @@ func runRaWaTest(runenv *runtime.RunEnv, initCtx *run.InitContext) error {
 	peersTopic := sync.NewTopic("peers", &peer.AddrInfo{})
 	_, err = client.Publish(ctx, peersTopic, host.InfoFromHost(h))
 	if err != nil {
-		return err
+		return fmt.Errorf("error during addrs publish: %s", err)
 	}
 
 	// Get addresses of all peers
@@ -108,12 +136,12 @@ func runRaWaTest(runenv *runtime.RunEnv, initCtx *run.InitContext) error {
 	sctx, cancelSub := context.WithCancel(ctx)
 	if _, err := client.Subscribe(sctx, peersTopic, peerCh); err != nil {
 		cancelSub()
-		return err
+		return fmt.Errorf("error during waiting for others addrs (sub): %s", err)
 	}
 	addrInfos, err := utils.AddrInfosFromChan(peerCh, runenv.TestInstanceCount)
 	if err != nil {
 		cancelSub()
-		return fmt.Errorf("no addrs in %d seconds", timeout/time.Second)
+		return fmt.Errorf("error during waiting for others addrs (chan): %s", err)
 	}
 	cancelSub()
 
@@ -140,7 +168,7 @@ func runRaWaTest(runenv *runtime.RunEnv, initCtx *run.InitContext) error {
 	if provider {
 		bstore, err = utils.CreateBlockstore(ctx, bstoreDelay)
 		if err != nil {
-			return err
+			return fmt.Errorf("error during blockstore creation (provider): %s", err)
 		}
 	}
 
@@ -149,6 +177,8 @@ func runRaWaTest(runenv *runtime.RunEnv, initCtx *run.InitContext) error {
 	for runNum := 1; runNum < runCount+1; runNum++ {
 		isFirstRun := runNum == 1
 		runId := fmt.Sprintf("%d", runNum)
+		runCtx, cancelRun := context.WithCancel(ctx)
+		defer cancelRun()
 
 		// Wait for all nodes to be ready to start the run
 		err = signalAndWaitForAll("start-run-" + runId)
@@ -164,9 +194,9 @@ func runRaWaTest(runenv *runtime.RunEnv, initCtx *run.InitContext) error {
 		dht := utils.ConstructStubDhtClient(dhtStubDelay)
 		if provider {
 			// For seeds, create a new bitswap node from the existing datastore
-			bsnode, err = utils.CreateBitswapNode(ctx, h, bstore, dht)
+			bsnode, err = utils.CreateBitswapNode(runCtx, h, bstore, dht)
 			if err != nil {
-				return err
+				return fmt.Errorf("error during bs node creation (provider): %s", err)
 			}
 
 			// If this is the first run
@@ -174,7 +204,7 @@ func runRaWaTest(runenv *runtime.RunEnv, initCtx *run.InitContext) error {
 				runenv.RecordMessage("Generating seed data of %d bytes", fileSize)
 
 				tmpFile := utils.RandReader(fileSize)
-				ipldNode, err := bsnode.Add(ctx, tmpFile)
+				ipldNode, err := bsnode.Add(runCtx, tmpFile)
 				if err != nil {
 					return fmt.Errorf("failed to set up seed: %w", err)
 				}
@@ -182,26 +212,26 @@ func runRaWaTest(runenv *runtime.RunEnv, initCtx *run.InitContext) error {
 				providerInfo = *host.InfoFromHost(h)
 
 				// Inform other nodes of the root CID
-				if _, err = client.Publish(ctx, rootCidTopic, &rootCid); err != nil {
+				if _, err = client.Publish(runCtx, rootCidTopic, &rootCid); err != nil {
 					return fmt.Errorf("failed to get Redis Sync rootCidTopic %w", err)
 				}
 				// Inform other nodes of the provider ID
-				if _, err = client.Publish(ctx, providerTopic, &providerInfo); err != nil {
+				if _, err = client.Publish(runCtx, providerTopic, &providerInfo); err != nil {
 					return fmt.Errorf("failed to get Redis Sync providerTopic %w", err)
 				}
 				runenv.RecordMessage("Provider initialization done")
 			}
 		} else {
 			// For leeches and passives, create a new blockstore on each run
-			bstore, err = utils.CreateBlockstore(ctx, bstoreDelay)
+			bstore, err = utils.CreateBlockstore(runCtx, bstoreDelay)
 			if err != nil {
-				return err
+				return fmt.Errorf("error during blockstore creation (passive / requestor): %s", err)
 			}
 
 			// Create a new bitswap node from the blockstore
-			bsnode, err = utils.CreateBitswapNode(ctx, h, bstore, dht)
+			bsnode, err = utils.CreateBitswapNode(runCtx, h, bstore, dht)
 			if err != nil {
-				return err
+				return fmt.Errorf("error during bs node creation (passive / requestor): %s", err)
 			}
 
 			// If this is the first run for this file size
@@ -209,7 +239,7 @@ func runRaWaTest(runenv *runtime.RunEnv, initCtx *run.InitContext) error {
 				runenv.RecordMessage("Accessing root cid and provider information for stub dht")
 				// Get the root CID from a seed
 				rootCidCh := make(chan *cid.Cid, 1)
-				sctx, cancelRootCidSub := context.WithCancel(ctx)
+				sctx, cancelRootCidSub := context.WithCancel(runCtx)
 				if _, err := client.Subscribe(sctx, rootCidTopic, rootCidCh); err != nil {
 					cancelRootCidSub()
 					return fmt.Errorf("failed to subscribe to rootCidTopic %w", err)
@@ -223,7 +253,7 @@ func runRaWaTest(runenv *runtime.RunEnv, initCtx *run.InitContext) error {
 
 				// Get the provider info
 				providerInfoCh := make(chan *peer.AddrInfo, 1)
-				sctx, cancelProviderInfoSub := context.WithCancel(ctx)
+				sctx, cancelProviderInfoSub := context.WithCancel(runCtx)
 				if _, err := client.Subscribe(sctx, providerTopic, providerInfoCh); err != nil {
 					cancelProviderInfoSub()
 					return fmt.Errorf("failed to subscribe to providerTopic %w", err)
@@ -247,9 +277,9 @@ func runRaWaTest(runenv *runtime.RunEnv, initCtx *run.InitContext) error {
 		}
 
 		// Dial connPerNode peers
-		dialed, err := utils.DialOtherPeers(ctx, h, addrInfos, connPerNode)
+		dialed, err := utils.DialOtherPeers(runCtx, h, addrInfos, connPerNode)
 		if err != nil {
-			return err
+			return fmt.Errorf("error during peer dial: %s", err)
 		}
 		runenv.RecordMessage("Dialed %d other nodes (run %d)", len(dialed), runNum)
 
@@ -261,26 +291,22 @@ func runRaWaTest(runenv *runtime.RunEnv, initCtx *run.InitContext) error {
 
 		/// --- Start test
 		runenv.RecordMessage("Test start (run %d)", runNum)
-		var timeToFetch time.Duration
 		if requestor {
+			var timeToFetch time.Duration
 			runenv.RecordMessage("Starting fetch (run %d)", runNum)
 			start := time.Now()
-			err := bsnode.FetchGraph(ctx, rootCid)
+			err := bsnode.FetchGraph(runCtx, rootCid)
 			timeToFetch = time.Since(start)
 			if err != nil {
 				return fmt.Errorf("error fetching data through Bitswap: %w", err)
 			}
 			runenv.RecordMessage("Leech fetch complete (%s) (run %d)", timeToFetch, runNum)
+			/// --- Report stats
+			runenv.R().RecordPoint("time-to-fetch-ms", float64(timeToFetch.Milliseconds()))
 		}
 
-		// Wait for all leeches to have downloaded the data from seeds
+		// Wait for all nodes
 		err = signalAndWaitForAll("transfer-complete-" + runId)
-		if err != nil {
-			return err
-		}
-
-		/// --- Report stats
-		runenv.R().RecordPoint("time-to-fetch-ms", float64(timeToFetch.Milliseconds()))
 		if err != nil {
 			return err
 		}
@@ -304,9 +330,23 @@ func runRaWaTest(runenv *runtime.RunEnv, initCtx *run.InitContext) error {
 			// Note that although we create a new blockstore for the leech at the
 			// start of the run, explicitly cleaning up the blockstore from the
 			// previous run allows it to be GCed.
-			if err := utils.ClearBlockstore(ctx, bstore); err != nil {
+			if err := utils.ClearBlockstore(runCtx, bstore); err != nil {
 				return fmt.Errorf("error clearing blockstore: %w", err)
 			}
+		}
+
+		// Clear peerstores
+		for _, ai := range addrInfos {
+			h.Peerstore().ClearAddrs(ai.ID)
+			h.Peerstore().RemovePeer(ai.ID)
+		}
+
+		cancelRun()
+
+		// Wait for all nodes
+		err = signalAndWaitForAll("run-done-" + runId)
+		if err != nil {
+			return err
 		}
 	}
 

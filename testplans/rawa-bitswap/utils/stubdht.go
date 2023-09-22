@@ -45,8 +45,13 @@ func (d *stubDhtClient) AddProviderData(c cid.Cid, ais []peer.AddrInfo) {
 	d.providers[c] = append(d.providers[c], ais...)
 }
 
-func (d *stubDhtClient) FindPeer(_ context.Context, p peer.ID) (peer.AddrInfo, error) {
+func (d *stubDhtClient) FindPeer(ctx context.Context, p peer.ID) (peer.AddrInfo, error) {
 	d.accessDelay.Wait()
+	select {
+	case <-ctx.Done():
+		return peer.AddrInfo{}, ctx.Err()
+	default:
+	}
 	return d.peers[p], nil
 }
 
