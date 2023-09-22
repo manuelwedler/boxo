@@ -15,6 +15,7 @@ import (
 	logging "github.com/ipfs/go-log"
 	peer "github.com/libp2p/go-libp2p/core/peer"
 	"github.com/libp2p/go-libp2p/p2p/protocol/ping"
+	ma "github.com/multiformats/go-multiaddr"
 	"go.uber.org/zap"
 )
 
@@ -291,14 +292,42 @@ func (mq *MessageQueue) AddForwardWants(wantHaves []cid.Cid) {
 }
 
 // Add forward-haves
-func (mq *MessageQueue) AddForwardHaves(to peer.ID, have cid.Cid, peers []peer.AddrInfo) {
+func (mq *MessageQueue) AddForwardHaves(have cid.Cid, peers []peer.AddrInfo) {
 	mq.wllock.Lock()
 	defer mq.wllock.Unlock()
 
 	if _, ok := mq.forwardHaves[have]; !ok {
 		mq.forwardHaves[have] = make([]peer.AddrInfo, 0, len(peers))
 	}
-	mq.forwardHaves[have] = append(mq.forwardHaves[have], peers...)
+
+	// filter duplicates and merge with existing info
+	infos := make(map[peer.ID]map[string]ma.Multiaddr)
+	for _, ai := range peers {
+		if _, ok := infos[ai.ID]; !ok {
+			infos[ai.ID] = make(map[string]ma.Multiaddr, len(ai.Addrs))
+		}
+		for _, addrs := range ai.Addrs {
+			infos[ai.ID][addrs.String()] = addrs
+		}
+	}
+	for _, ai := range mq.forwardHaves[have] {
+		if _, ok := infos[ai.ID]; !ok {
+			infos[ai.ID] = make(map[string]ma.Multiaddr, len(ai.Addrs))
+		}
+		for _, addrs := range ai.Addrs {
+			infos[ai.ID][addrs.String()] = addrs
+		}
+	}
+	result := make([]peer.AddrInfo, 0, len(infos))
+	for p, addrsMap := range infos {
+		addrs := make([]ma.Multiaddr, 0, len(addrsMap))
+		for _, addr := range addrsMap {
+			addrs = append(addrs, addr)
+		}
+		result = append(result, peer.AddrInfo{ID: p, Addrs: addrs})
+	}
+
+	mq.forwardHaves[have] = result
 
 	// Schedule a message send
 	mq.signalWorkReady()

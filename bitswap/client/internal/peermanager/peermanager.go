@@ -17,7 +17,7 @@ var log = logging.Logger("bs:peermgr")
 // PeerQueue provides a queue of messages to be sent for a single peer.
 type PeerQueue interface {
 	AddForwardWants([]cid.Cid)
-	AddForwardHaves(to peer.ID, have cid.Cid, peers []peer.AddrInfo)
+	AddForwardHaves(have cid.Cid, peers []peer.AddrInfo)
 	AddBroadcastWantHaves([]cid.Cid)
 	AddWants([]cid.Cid, []cid.Cid)
 	AddCancels([]cid.Cid)
