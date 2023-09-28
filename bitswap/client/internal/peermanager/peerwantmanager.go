@@ -132,20 +132,23 @@ func (pwm *peerWantManager) removePeer(p peer.ID) {
 }
 
 // forwardWants sends want-forwards to one peer.
-func (pwm *peerWantManager) forwardWants(wantHaves []cid.Cid, exclude []peer.ID) error {
-	for _, c := range wantHaves {
-		p := pwm.fgm.GetSuccessorByStrategy(c, exclude)
-		log.Debugw("pwm forwardWants", "selectedSuccessor", p, "cids", wantHaves)
-		err := p.Validate()
-		if err == nil {
-			// TODO / the connection to this peer should be protected
-			// TODO / but we should unprotect when forwardhave is received from p
-			pwm.peerWants[p].peerQueue.AddForwardWants(wantHaves)
-		} else {
-			return errors.New("cannot forward because no successor is available")
-		}
+func (pwm *peerWantManager) forwardWants(c cid.Cid, exclude []peer.ID, to peer.ID) (peer.ID, error) {
+	p := to
+	if p == peer.ID("") {
+		p = pwm.fgm.GetSuccessorByStrategy(c, exclude)
+		log.Debugw("pwm forwardWants", "selectedSuccessor", p, "cid", c)
 	}
-	return nil
+	err := p.Validate()
+	if err != nil {
+		return peer.ID(""), errors.New("cannot forward because no successor is available")
+	}
+	if _, ok := pwm.peerWants[p]; !ok {
+		return peer.ID(""), fmt.Errorf("forwardWants() called with peer %s but peer not found in peerWantManager, cid: %s", p, c)
+	}
+	// TODO / the connection to this peer should be protected
+	// TODO / but we should unprotect when forwardhave is received from p
+	pwm.peerWants[p].peerQueue.AddForwardWants([]cid.Cid{c})
+	return p, nil
 }
 
 // forwardHaves sends forward-haves to a specified peer.
@@ -154,7 +157,7 @@ func (pwm *peerWantManager) forwardHaves(to peer.ID, have cid.Cid, peers []peer.
 		log.Debugw("pwm forwardHaves", "to", to, "cid", have, "providers", peers)
 		pwm.peerWants[to].peerQueue.AddForwardHaves(have, peers)
 	} else {
-		log.Debugf("forwardHaves() called with peer %s but peer not found in peerWantManager, cid: %s", to, have.String())
+		log.Debugf("forwardHaves() called with peer %s but peer not found in peerWantManager, cid: %s", to, have)
 	}
 }
 

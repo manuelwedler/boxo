@@ -103,7 +103,7 @@ func (sm *SessionManager) NewSession(ctx context.Context,
 	defer span.End()
 
 	pm := sm.peerManagerFactory(ctx, id)
-	session := sm.sessionFactory(ctx, sm, id, pm, sm.sessionInterestManager, sm.peerManager, sm.blockPresenceManager, sm.notif, provSearchDelay, rebroadcastDelay, sm.self, false, func(peer.AddrInfo, cid.Cid) {}, unforwardedSearchDelay)
+	session := sm.sessionFactory(ctx, sm, id, pm, sm.sessionInterestManager, sm.peerManager, sm.blockPresenceManager, sm.notif, provSearchDelay, rebroadcastDelay, sm.self, false, func(peer.AddrInfo, cid.Cid, bool) {}, unforwardedSearchDelay)
 
 	sm.sessLk.Lock()
 	if sm.sessions != nil { // check if SessionManager was shutdown

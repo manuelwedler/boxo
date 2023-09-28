@@ -165,7 +165,7 @@ func New(parent context.Context, network bsnet.BitSwapNetwork, bstore blockstore
 		proxy bool,
 		proxyDiscoveryCallback bsrm.ProxyDiscoveryCallback,
 		unforwardedSearchDelay time.Duration) bssm.Session {
-		return bssession.New(sessctx, sessmgr, id, spm, pqm, sim, pm, bpm, notif, provSearchDelay, rebroadcastDelay, self, proxy, proxyDiscoveryCallback, unforwardedSearchDelay, bstore)
+		return bssession.New(sessctx, sessmgr, id, spm, pqm, sim, pm, bpm, notif, provSearchDelay, rebroadcastDelay, self, proxy, proxyDiscoveryCallback, unforwardedSearchDelay, bstore, rm)
 	}
 	sessionPeerManagerFactory := func(ctx context.Context, id uint64) bssession.SessionPeerManager {
 		return bsspm.New(id, network.ConnectionManager())
@@ -364,7 +364,7 @@ func (bs *Client) receiveBlocksFrom(ctx context.Context, from peer.ID, blks []bl
 	bs.sm.ReceiveFrom(ctx, from, allKs, haves, dontHaves, forwardHaves)
 
 	// Relay forward-haves to any interested peers
-	bs.rm.ProcessForwardHaves(ctx, forwardHaves)
+	bs.rm.ProcessForwardHaves(ctx, from, forwardHaves)
 
 	if bs.blockReceivedNotifier != nil {
 		bs.blockReceivedNotifier.ReceivedBlocks(from, wanted)

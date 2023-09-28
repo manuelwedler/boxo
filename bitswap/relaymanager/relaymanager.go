@@ -23,7 +23,9 @@ const (
 
 type ForwardSender interface {
 	// ForwardWants sends want-forwards to one connected peer
-	ForwardWants(ctx context.Context, cids []cid.Cid, exclude []peer.ID) error
+	ForwardWants(ctx context.Context, c cid.Cid, exclude []peer.ID) (peer.ID, error)
+	// ForwardWantsTo sends want-forwards to a specific peer
+	ForwardWantsTo(ctx context.Context, c cid.Cid, to peer.ID) error
 	// ForwardHaves sends forward-haves to a specified peer.
 	ForwardHaves(ctx context.Context, to peer.ID, have cid.Cid, peers []peer.AddrInfo)
 }
@@ -32,7 +34,7 @@ type ForwardSender interface {
 type CreateProxySession func(ctx context.Context, proxyDiscoveryCallback ProxyDiscoveryCallback) exchange.Fetcher
 
 // ProxyDiscoveryCallback is called when a proxy session discovers peers for a CID
-type ProxyDiscoveryCallback func(peer.AddrInfo, cid.Cid)
+type ProxyDiscoveryCallback func(provider peer.AddrInfo, c cid.Cid, seesionClosed bool)
 
 // PeerTagger is an interface for tagging peers with metadata
 type PeerTagger interface {
@@ -47,22 +49,30 @@ func getConnectionProtectionTag(id cid.Cid) string {
 type RelayManager struct {
 	Forwarder           ForwardSender
 	CreateProxySession  CreateProxySession
-	Ledger              *RelayLedger
 	ProxyTransitionProb float64
 	peerTagger          PeerTagger
 	self                peer.ID
+
+	// cid -> want source -> relayed to
+	fromMap map[cid.Cid]map[peer.ID]peer.ID
+	// cid -> want source -> proxied (when transitioned to proxy phase)
+	proxyMap map[cid.Cid]map[peer.ID]bool
+	// cid -> relayed to -> want source
+	toMap map[cid.Cid]map[peer.ID]peer.ID
+	lk    sync.RWMutex
 }
 
 func NewRelayManager(peerTagger PeerTagger, self peer.ID) *RelayManager {
 	return &RelayManager{
-		Forwarder:          nil,
-		CreateProxySession: nil,
-		Ledger: &RelayLedger{
-			items: make(map[cid.Cid]map[peer.ID]bool, 0),
-		},
+		Forwarder:           nil,
+		CreateProxySession:  nil,
 		ProxyTransitionProb: defaultProxyPhaseTransitionProbability,
 		peerTagger:          peerTagger,
 		self:                self,
+
+		fromMap:  make(map[cid.Cid]map[peer.ID]peer.ID),
+		proxyMap: make(map[cid.Cid]map[peer.ID]bool),
+		toMap:    make(map[cid.Cid]map[peer.ID]peer.ID),
 	}
 }
 
@@ -70,24 +80,64 @@ func NewRelayManager(peerTagger PeerTagger, self peer.ID) *RelayManager {
 // proxy session. For the random decision ProxyTransitionProb is used.
 // The relayledger is updated with the cids.
 func (rm *RelayManager) ProcessForwards(ctx context.Context, kt *keyTracker) {
-	rm.Ledger.Update(kt)
-	forwards := kt.T
+	rm.lk.Lock()
+	defer rm.lk.Unlock()
 
+	forwards := kt.T
+	from := kt.Peer
 	rand.Seed(time.Now().UnixNano())
 	for _, c := range forwards {
-		rm.peerTagger.Protect(kt.Peer, getConnectionProtectionTag(c))
+		rm.peerTagger.Protect(from, getConnectionProtectionTag(c))
+		if _, ok := rm.fromMap[c]; !ok {
+			rm.fromMap[c] = make(map[peer.ID]peer.ID, 1)
+		}
+		if _, ok := rm.proxyMap[c]; !ok {
+			rm.proxyMap[c] = make(map[peer.ID]bool, 1)
+		}
+		if _, ok := rm.toMap[c]; !ok {
+			rm.toMap[c] = make(map[peer.ID]peer.ID, 1)
+		}
+
+		// If we are already the proxy, the session is still running
+		if proxied, ok := rm.proxyMap[c][from]; ok && proxied {
+			log.Debugf("processing forwards: already proxy for the combination, ignore; cid=%s, from=%s", c, from)
+			continue
+		}
+		// Already relayed this cid from this peer
+		if to, ok := rm.fromMap[c][from]; ok {
+			// Send want-forward again to the same receiver
+			log.Debugf("processing forwards: duplicate forward, sending to same peer; cid=%s, from=%s, to=%s", c, from, to)
+			err := rm.Forwarder.ForwardWantsTo(ctx, c, to)
+			if err != nil {
+				log.Debugf("processing forwards: (same peer) forward error; starting proxy phase; cid=%s, from=%s, err=%s", c, from, err)
+				rm.startProxyPhase(ctx, from, c)
+				rm.proxyMap[c][from] = true
+			}
+			continue
+		}
 
 		rnd := rand.Float64()
 		if rnd <= rm.ProxyTransitionProb {
-			log.Debugf("processing forwards: starting proxy phase; cid=%s, from=%s", c, kt.Peer)
-			rm.startProxyPhase(ctx, kt.Peer, c)
+			log.Debugf("processing forwards: starting proxy phase; cid=%s, from=%s", c, from)
+			rm.startProxyPhase(ctx, from, c)
+			rm.proxyMap[c][from] = true
 		} else {
-			log.Debugf("processing forwards: forwarding further; cid=%s, from=%s", c, kt.Peer)
-			err := rm.Forwarder.ForwardWants(ctx, []cid.Cid{c}, []peer.ID{kt.Peer})
-			if err != nil {
-				log.Debugf("processing forwards: forward error; starting proxy phase; cid=%s, from=%s, err=%s", c, kt.Peer, err)
-				rm.startProxyPhase(ctx, kt.Peer, c)
+			log.Debugf("processing forwards: forwarding further; cid=%s, from=%s", c, from)
+			excludes := make([]peer.ID, 0, len(rm.fromMap[c])+1)
+			excludes = append(excludes, from)
+			// Don't forward to a peer which already received a want-forward for this cid
+			for _, alreadySentTo := range rm.fromMap[c] {
+				excludes = append(excludes, alreadySentTo)
 			}
+			forwardedTo, err := rm.Forwarder.ForwardWants(ctx, c, excludes)
+			if err != nil {
+				log.Debugf("processing forwards: forward error; starting proxy phase; cid=%s, from=%s, err=%s", c, from, err)
+				rm.startProxyPhase(ctx, from, c)
+				rm.proxyMap[c][from] = true
+				continue
+			}
+			rm.fromMap[c][from] = forwardedTo
+			rm.toMap[c][forwardedTo] = from
 		}
 	}
 }
@@ -96,7 +146,21 @@ func (rm *RelayManager) startProxyPhase(ctx context.Context, sender peer.ID, c c
 	innerCtx := ctx
 	returnTo := sender
 	k := c
-	proxyDiscoveryCallback := func(provider peer.AddrInfo, received cid.Cid) {
+	proxyDiscoveryCallback := func(provider peer.AddrInfo, received cid.Cid, sessionClosed bool) {
+		rm.lk.Lock()
+		defer rm.lk.Unlock()
+		if _, ok := rm.proxyMap[c]; !ok {
+			rm.proxyMap[c] = make(map[peer.ID]bool, 1)
+		}
+
+		if sessionClosed {
+			rm.proxyMap[c][returnTo] = false
+		}
+
+		if provider.ID == peer.ID("") || !received.Defined() {
+			return
+		}
+
 		if received != k {
 			log.Debugf("[recv] cid not equal proxy cid; cid=%s, peer=%s, proxycid=%s", received, provider, k)
 			return
@@ -110,12 +174,25 @@ func (rm *RelayManager) startProxyPhase(ctx context.Context, sender peer.ID, c c
 }
 
 // ProcessForwardHaves relays the forward-haves to all interested peers in the ledger
-func (rm *RelayManager) ProcessForwardHaves(ctx context.Context, forwardHaves map[cid.Cid][]peer.AddrInfo) {
+func (rm *RelayManager) ProcessForwardHaves(ctx context.Context, sender peer.ID, forwardHaves map[cid.Cid][]peer.AddrInfo) {
 	for c, ps := range forwardHaves {
-		interested := rm.Ledger.InterestedPeers(c)
-		for _, to := range interested {
-			rm.RelayHaves(ctx, to, c, ps)
+		if _, ok := rm.toMap[c]; !ok {
+			log.Debugf("received a forward-have from a peer to which we did not relay; sender=%s, cid=%s", sender, c)
+			continue
 		}
+
+		if _, ok := rm.toMap[c][sender]; !ok {
+			log.Debugf("received a forward-have from a peer to which we did not relay; sender=%s, cid=%s", sender, c)
+			continue
+		}
+
+		if rm.toMap[c][sender] == rm.self {
+			// sessions are automatically notified
+			continue
+		}
+
+		relayTo := rm.toMap[c][sender]
+		rm.RelayHaves(ctx, relayTo, c, ps)
 	}
 }
 
@@ -127,47 +204,35 @@ func (rm *RelayManager) RelayHaves(ctx context.Context, to peer.ID, have cid.Cid
 	rm.peerTagger.Unprotect(to, getConnectionProtectionTag(have))
 }
 
-type RelayLedger struct {
-	items map[cid.Cid]map[peer.ID]bool
-	lk    sync.RWMutex
-}
+// Just called by the requestor session
+func (rm *RelayManager) ForwardSearch(ctx context.Context, c cid.Cid) error {
+	rm.lk.Lock()
+	defer rm.lk.Unlock()
 
-// RemoveInterest removes interest for a CID from a peer from the registry.
-func (rl *RelayLedger) RemoveInterest(c cid.Cid, p peer.ID) {
-	rl.lk.Lock()
-	defer rl.lk.Unlock()
-
-	delete(rl.items[c], p)
-	if len(rl.items[c]) == 0 {
-		delete(rl.items, c)
+	if _, ok := rm.fromMap[c]; !ok {
+		rm.fromMap[c] = make(map[peer.ID]peer.ID, 1)
 	}
-}
-
-func (rl *RelayLedger) Update(kt *keyTracker) {
-	rl.lk.Lock()
-	defer rl.lk.Unlock()
-
-	for _, c := range kt.T {
-		if _, ok := rl.items[c]; !ok {
-			// Add to the registry
-			rl.items[c] = make(map[peer.ID]bool, 1)
-		}
-		rl.items[c][kt.Peer] = true
+	if _, ok := rm.proxyMap[c]; !ok {
+		rm.proxyMap[c] = make(map[peer.ID]bool, 1)
 	}
-}
-
-// InterestedPeers returns peer looking for a cid.
-func (rl *RelayLedger) InterestedPeers(c cid.Cid) []peer.ID {
-	rl.lk.RLock()
-	defer rl.lk.RUnlock()
-	// Create brand new map to avoid data races.
-	res := make([]peer.ID, 0, len(rl.items[c]))
-	for p, ok := range rl.items[c] {
-		if ok {
-			res = append(res, p)
-		}
+	if _, ok := rm.toMap[c]; !ok {
+		rm.toMap[c] = make(map[peer.ID]peer.ID, 1)
 	}
-	return res
+
+	log.Debugf("sending forward; cid=%s, from=%s", c, rm.self)
+	excludes := make([]peer.ID, 0, len(rm.fromMap[c])+1)
+	// Don't forward to a peer which already received a want-forward for this cid
+	for _, alreadySentTo := range rm.fromMap[c] {
+		excludes = append(excludes, alreadySentTo)
+	}
+	forwardedTo, err := rm.Forwarder.ForwardWants(ctx, c, excludes)
+	if err != nil {
+		log.Debugf("sending forward: forward error; cid=%s, from=%s, err=%s", c, rm.self, err)
+		return err
+	}
+	rm.fromMap[c][rm.self] = forwardedTo
+	rm.toMap[c][forwardedTo] = rm.self
+	return nil
 }
 
 type keyTracker struct {

@@ -39,9 +39,6 @@ type PeerManager interface {
 	UnregisterSession(uint64)
 	// SendWants tells the PeerManager to send wants to the given peer
 	SendWants(ctx context.Context, peerId peer.ID, wantBlocks []cid.Cid, wantHaves []cid.Cid)
-	// ForwardWants sends want-forwards to one connected peer (used for
-	// session discovery)
-	ForwardWants(ctx context.Context, cids []cid.Cid, exclude []peer.ID) error
 	// BroadcastWantHaves sends want-haves to all connected peers (used for
 	// session discovery)
 	BroadcastWantHaves(context.Context, []cid.Cid)
@@ -150,6 +147,7 @@ type Session struct {
 	proxy                    bool
 	proxyDiscoveryCallback   bsrm.ProxyDiscoveryCallback
 	proxyDiscoverySuccessful bool
+	relaymanager             *bsrm.RelayManager
 }
 
 // New creates a new bitswap session whose lifetime is bounded by the
@@ -170,7 +168,8 @@ func New(
 	proxy bool,
 	proxyDiscoveryCallback bsrm.ProxyDiscoveryCallback,
 	unforwardedSearchDelay time.Duration,
-	bstore blockstore.Blockstore) *Session {
+	bstore blockstore.Blockstore,
+	relaymanager *bsrm.RelayManager) *Session {
 
 	ctx, cancel := context.WithCancel(ctx)
 	s := &Session{
@@ -196,6 +195,7 @@ func New(
 		unforwardedSearchDelay:  unforwardedSearchDelay,
 		unforwardedSearchTimers: make(map[cid.Cid]*time.Timer),
 		blockstore:              bstore,
+		relaymanager:            relaymanager,
 	}
 	s.sws = newSessionWantSender(id, pm, sprm, sm, bpm, s.onWantsSent, s.onPeersExhausted, proxy)
 
@@ -413,6 +413,7 @@ func (s *Session) broadcast(ctx context.Context, wants []cid.Cid) {
 	if s.proxy {
 		// Proxy stops when it was successful with the initial broadcast to prevent asking the DHT
 		if s.proxyDiscoverySuccessful {
+			s.proxyDiscoveryCallback(peer.AddrInfo{ID: peer.ID("")}, cid.Undef, true)
 			s.Shutdown()
 			return
 		}
@@ -477,6 +478,7 @@ func (s *Session) findMorePeers(ctx context.Context, c cid.Cid) {
 		}
 		// Proxy shuts down when DHT was queried once, since proxies work on one single cid
 		if s.proxy {
+			s.proxyDiscoveryCallback(peer.AddrInfo{ID: peer.ID("")}, cid.Undef, true)
 			s.Shutdown()
 		}
 	}(c)
@@ -484,6 +486,9 @@ func (s *Session) findMorePeers(ctx context.Context, c cid.Cid) {
 
 // handleShutdown is called when the session shuts down
 func (s *Session) handleShutdown() {
+	// tell relay manager that proxy session shuts down
+	s.proxyDiscoveryCallback(peer.AddrInfo{ID: peer.ID("")}, cid.Undef, true)
+
 	// Stop the idle timer
 	s.idleTick.Stop()
 
@@ -598,7 +603,7 @@ func (s *Session) forwardWants(ctx context.Context, wants []cid.Cid) {
 			}
 		}(c)
 
-		s.pm.ForwardWants(ctx, []cid.Cid{c}, []peer.ID{})
+		s.relaymanager.ForwardSearch(ctx, c)
 	}
 }
 
@@ -641,7 +646,7 @@ func (s *Session) foundProvider(p peer.ID, c cid.Cid) {
 	if s.proxy {
 		addr := s.providerFinder.GetAddrInfo(s.ctx, p)
 		s.proxyDiscoverySuccessful = true
-		s.proxyDiscoveryCallback(addr, c)
+		s.proxyDiscoveryCallback(addr, c, false)
 	}
 }
 

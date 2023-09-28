@@ -12,6 +12,7 @@ import (
 	bssim "github.com/ipfs/boxo/bitswap/client/internal/sessioninterestmanager"
 	bsspm "github.com/ipfs/boxo/bitswap/client/internal/sessionpeermanager"
 	"github.com/ipfs/boxo/bitswap/internal/testutil"
+	bsrm "github.com/ipfs/boxo/bitswap/relaymanager"
 	blockstore "github.com/ipfs/boxo/blockstore"
 	"github.com/ipfs/boxo/internal/test"
 	cid "github.com/ipfs/go-cid"
@@ -178,7 +179,7 @@ func TestSessionGetBlocks(t *testing.T) {
 	id := testutil.GenerateSessionID()
 	sm := newMockSessionMgr()
 	bs := blockstore.NewBlockstore(dssync.MutexWrap(ds.NewMapDatastore()))
-	session := New(ctx, sm, id, fspm, fpf, sim, fpm, bpm, notif, time.Second, delay.Fixed(time.Minute), "", false, func(peer.AddrInfo, cid.Cid) {}, time.Second, bs)
+	session := New(ctx, sm, id, fspm, fpf, sim, fpm, bpm, notif, time.Second, delay.Fixed(time.Minute), "", false, func(peer.AddrInfo, cid.Cid, bool) {}, time.Second, bs, &bsrm.RelayManager{})
 	blockGenerator := blocksutil.NewBlockGenerator()
 	blks := blockGenerator.Blocks(broadcastLiveWantsLimit * 2)
 	var cids []cid.Cid
@@ -277,7 +278,7 @@ func TestSessionFindMorePeers(t *testing.T) {
 	id := testutil.GenerateSessionID()
 	sm := newMockSessionMgr()
 	bs := blockstore.NewBlockstore(dssync.MutexWrap(ds.NewMapDatastore()))
-	session := New(ctx, sm, id, fspm, fpf, sim, fpm, bpm, notif, time.Second, delay.Fixed(time.Minute), "", false, func(peer.AddrInfo, cid.Cid) {}, time.Second, bs)
+	session := New(ctx, sm, id, fspm, fpf, sim, fpm, bpm, notif, time.Second, delay.Fixed(time.Minute), "", false, func(peer.AddrInfo, cid.Cid, bool) {}, time.Second, bs, &bsrm.RelayManager{})
 	session.SetBaseTickDelay(200 * time.Microsecond)
 	blockGenerator := blocksutil.NewBlockGenerator()
 	blks := blockGenerator.Blocks(broadcastLiveWantsLimit * 2)
@@ -355,7 +356,7 @@ func TestSessionOnPeersExhausted(t *testing.T) {
 	id := testutil.GenerateSessionID()
 	sm := newMockSessionMgr()
 	bs := blockstore.NewBlockstore(dssync.MutexWrap(ds.NewMapDatastore()))
-	session := New(ctx, sm, id, fspm, fpf, sim, fpm, bpm, notif, time.Second, delay.Fixed(time.Minute), "", false, func(peer.AddrInfo, cid.Cid) {}, time.Second, bs)
+	session := New(ctx, sm, id, fspm, fpf, sim, fpm, bpm, notif, time.Second, delay.Fixed(time.Minute), "", false, func(peer.AddrInfo, cid.Cid, bool) {}, time.Second, bs, &bsrm.RelayManager{})
 	blockGenerator := blocksutil.NewBlockGenerator()
 	blks := blockGenerator.Blocks(broadcastLiveWantsLimit + 5)
 	var cids []cid.Cid
@@ -403,7 +404,7 @@ func TestSessionFailingToGetFirstBlock(t *testing.T) {
 	id := testutil.GenerateSessionID()
 	sm := newMockSessionMgr()
 	bs := blockstore.NewBlockstore(dssync.MutexWrap(ds.NewMapDatastore()))
-	session := New(ctx, sm, id, fspm, fpf, sim, fpm, bpm, notif, 10*time.Millisecond, delay.Fixed(100*time.Millisecond), "", false, func(peer.AddrInfo, cid.Cid) {}, time.Second, bs)
+	session := New(ctx, sm, id, fspm, fpf, sim, fpm, bpm, notif, 10*time.Millisecond, delay.Fixed(100*time.Millisecond), "", false, func(peer.AddrInfo, cid.Cid, bool) {}, time.Second, bs, &bsrm.RelayManager{})
 	blockGenerator := blocksutil.NewBlockGenerator()
 	blks := blockGenerator.Blocks(4)
 	var cids []cid.Cid
@@ -522,7 +523,7 @@ func TestSessionCtxCancelClosesGetBlocksChannel(t *testing.T) {
 	// Create a new session with its own context
 	sessctx, sesscancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
 	bs := blockstore.NewBlockstore(dssync.MutexWrap(ds.NewMapDatastore()))
-	session := New(sessctx, sm, id, fspm, fpf, sim, fpm, bpm, notif, time.Second, delay.Fixed(time.Minute), "", false, func(peer.AddrInfo, cid.Cid) {}, time.Second, bs)
+	session := New(sessctx, sm, id, fspm, fpf, sim, fpm, bpm, notif, time.Second, delay.Fixed(time.Minute), "", false, func(peer.AddrInfo, cid.Cid, bool) {}, time.Second, bs, &bsrm.RelayManager{})
 
 	timerCtx, timerCancel := context.WithTimeout(context.Background(), 10*time.Millisecond)
 	defer timerCancel()
@@ -576,7 +577,7 @@ func TestSessionOnShutdownCalled(t *testing.T) {
 	sessctx, sesscancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
 	defer sesscancel()
 	bs := blockstore.NewBlockstore(dssync.MutexWrap(ds.NewMapDatastore()))
-	session := New(sessctx, sm, id, fspm, fpf, sim, fpm, bpm, notif, time.Second, delay.Fixed(time.Minute), "", false, func(peer.AddrInfo, cid.Cid) {}, time.Second, bs)
+	session := New(sessctx, sm, id, fspm, fpf, sim, fpm, bpm, notif, time.Second, delay.Fixed(time.Minute), "", false, func(peer.AddrInfo, cid.Cid, bool) {}, time.Second, bs, &bsrm.RelayManager{})
 
 	// Shutdown the session
 	session.Shutdown()
@@ -604,7 +605,7 @@ func TestSessionReceiveMessageAfterCtxCancel(t *testing.T) {
 	id := testutil.GenerateSessionID()
 	sm := newMockSessionMgr()
 	bs := blockstore.NewBlockstore(dssync.MutexWrap(ds.NewMapDatastore()))
-	session := New(ctx, sm, id, fspm, fpf, sim, fpm, bpm, notif, time.Second, delay.Fixed(time.Minute), "", false, func(peer.AddrInfo, cid.Cid) {}, time.Second, bs)
+	session := New(ctx, sm, id, fspm, fpf, sim, fpm, bpm, notif, time.Second, delay.Fixed(time.Minute), "", false, func(peer.AddrInfo, cid.Cid, bool) {}, time.Second, bs, &bsrm.RelayManager{})
 	blockGenerator := blocksutil.NewBlockGenerator()
 	blks := blockGenerator.Blocks(2)
 	cids := []cid.Cid{blks[0].Cid(), blks[1].Cid()}
