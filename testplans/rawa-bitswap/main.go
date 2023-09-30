@@ -119,9 +119,10 @@ func runRaWaTest(runenv *runtime.RunEnv, initCtx *run.InitContext) error {
 	defer h.Close()
 	runenv.RecordMessage("I am %s with addrs: %v", h.ID(), h.Addrs())
 
-	// Log PeerID with every message (WIP)
+	// Log PeerID with every message
 	recordMessage := func(msg string, a ...interface{}) {
-		prefix := fmt.Sprintf("[...%s] ", h.ID()[len(h.ID())-4:])
+		id := h.ID().String()
+		prefix := fmt.Sprintf("[...%s] ", id[len(id)-6:])
 		runenv.RecordMessage(prefix+msg, a...)
 	}
 
