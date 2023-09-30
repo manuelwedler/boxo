@@ -105,10 +105,10 @@ func runRaWaTest(runenv *runtime.RunEnv, initCtx *run.InitContext) error {
 	ip := initCtx.NetClient.MustGetDataNetworkIP()
 	var options []libp2p.Option
 	options = append(options, libp2p.Transport(tcp.NewTCPTransport))
-	options = append(options, libp2p.ListenAddrStrings(fmt.Sprintf("/ip4/%s/tcp/0", ip)))
+	options = append(options, libp2p.ListenAddrStrings(fmt.Sprintf("/ip4/%s/tcp/%d", ip, 3333+initCtx.GlobalSeq)))
 
 	options = append(options, libp2p.Transport(libp2pquic.NewTransport))
-	options = append(options, libp2p.ListenAddrStrings(fmt.Sprintf("/ip4/%s/udp/0/quic", ip)))
+	options = append(options, libp2p.ListenAddrStrings(fmt.Sprintf("/ip4/%s/udp/%d/quic", ip, 6666+initCtx.GlobalSeq)))
 
 	options = append(options, libp2p.Security(noise.ID, noise.New))
 
