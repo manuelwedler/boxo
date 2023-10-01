@@ -83,8 +83,13 @@ func (fgm *forwardGraphManager) run(ctx context.Context) {
 	}
 }
 
+func (fgm *forwardGraphManager) setForwardGraphDegree(degree uint64) {
+	fgm.degree = degree
+	fgm.SelectNewSuccessors()
+}
+
 func (fgm *forwardGraphManager) useCompleteGraph() bool {
-	return fgm.degree == math.MaxInt64
+	return fgm.degree == math.MaxUint64
 }
 
 func (fgm *forwardGraphManager) successorTarget() int {

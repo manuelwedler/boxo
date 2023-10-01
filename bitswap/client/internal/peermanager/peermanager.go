@@ -76,7 +76,7 @@ func New(
 }
 
 func (pm *PeerManager) SetForwardGraphDegree(degree uint64) {
-	pm.pwm.fgm.degree = degree
+	pm.pwm.fgm.setForwardGraphDegree(degree)
 }
 
 func (pm *PeerManager) SetForwardStrategy(strategy fs.ForwardStrategy) {

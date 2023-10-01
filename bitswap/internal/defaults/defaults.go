@@ -16,7 +16,7 @@ const (
 	UnforwardedSearchDelay = time.Second * 10
 	// Defines the degree of the regular graph (privacy subgraph) used for forwarding.
 	// The default corresponds to using the complete graph.
-	ForwardGraphDegree = math.MaxInt64
+	ForwardGraphDegree = math.MaxUint64
 
 	// Number of concurrent workers in decision engine that process requests to the blockstore
 	BitswapEngineBlockstoreWorkerCount = 128
