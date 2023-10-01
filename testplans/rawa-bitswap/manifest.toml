@@ -32,4 +32,8 @@ instances = { min = 2, max = 100, default = 2 }
   timeout_secs = { type = "int", desc = "timeout for each individual run", unit = "seconds", default = 90 }
   run_count = { type = "int", desc = "number of iterations of the test", unit = "iteration", default = 1 }
   conn_per_node = { type = "int", desc = "creates connections to a number of peers at random", default = 2 }
-  all_mode = { type = "bool", desc = "if enabled all nodes are both requestor and provider, if disabled there is 1 requestor and 1 provider", default = false }
+  all_mode = { type = "bool", desc = "if enabled all nodes are both requestor and provider, if disabled there is 1 requestor and 1 provider", default = true }
+  proxy_transition_prob = { type = "float", desc = "probability of transitioning into proxy phase instead of forwarding on each hop", default = 0.2 }
+  unforwarded_search_time = { type = "int", desc = "time after which a node queries the content routing subsystem itself", unit = "seconds", default = 10 }
+  forward_graph_degree = { type = "int", desc = "degree of the privacy-subgraph, 0 is the complete graph", default = 0 }
+  closest_peerid_forward = { type = "bool", desc = "if enabled, selects the closest peer to a cid when forwarding", default = false }

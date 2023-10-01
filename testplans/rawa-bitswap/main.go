@@ -4,11 +4,14 @@ import (
 	"context"
 	"encoding/binary"
 	"fmt"
+	"math"
 	"math/rand"
 	"time"
 
 	logging "github.com/ipfs/go-log"
 
+	bs "github.com/ipfs/boxo/bitswap"
+	bsfs "github.com/ipfs/boxo/bitswap/forwardstrategy"
 	blockstore "github.com/ipfs/boxo/blockstore"
 	"github.com/ipfs/boxo/testplan/rawa-bitswap/utils"
 	"github.com/ipfs/go-cid"
@@ -50,6 +53,15 @@ func runRaWaTest(runenv *runtime.RunEnv, initCtx *run.InitContext) error {
 	runCount := runenv.IntParam("run_count")
 	connPerNode := runenv.IntParam("conn_per_node")
 	allMode := runenv.BooleanParam("all_mode")
+
+	proxyTransitionProb := runenv.FloatParam("proxy_transition_prob")
+	unforwardedSearchTime := time.Duration(runenv.IntParam("unforwarded_search_time")) * time.Second
+	forwardGraphDegree := uint64(runenv.IntParam("forward_graph_degree"))
+	closestPeeridForward := runenv.BooleanParam("closest_peerid_forward")
+
+	if forwardGraphDegree == 0 {
+		forwardGraphDegree = math.MaxUint64
+	}
 
 	// Show debug logs
 	if debug {
@@ -206,8 +218,17 @@ func runRaWaTest(runenv *runtime.RunEnv, initCtx *run.InitContext) error {
 		var bsnode *utils.Node
 		providerTopic := sync.NewTopic("provider-info", &ProviderInfo{})
 
+		// Add values for configurable parameters
+		var bsOptions []bs.Option
+		bsOptions = append(bsOptions, bs.UnforwardedSearchDelay(unforwardedSearchTime))
+		bsOptions = append(bsOptions, bs.ProxyPhaseTransitionProbability(proxyTransitionProb))
+		bsOptions = append(bsOptions, bs.SetForwardGraphDegree(forwardGraphDegree))
+		if closestPeeridForward {
+			bsOptions = append(bsOptions, bs.SetForwardStrategy(bsfs.NewCloseCidForward()))
+		}
+
 		// Create a new bitswap node from the blockstore
-		bsnode, err = utils.CreateBitswapNode(runCtx, h, bstore, dht)
+		bsnode, err = utils.CreateBitswapNode(runCtx, h, bstore, dht, bsOptions...)
 		if err != nil {
 			return fmt.Errorf("error during bs node creation: %s", err)
 		}
