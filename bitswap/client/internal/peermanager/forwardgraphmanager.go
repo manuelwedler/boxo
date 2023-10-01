@@ -64,14 +64,13 @@ func newForwardGraphManager(
 		peerTagger:     peerTagger,
 	}
 
+	fgm.reconstructGraphTimer = time.NewTimer(reconstructGraphDelay)
 	go fgm.run(ctx)
 
 	return fgm
 }
 
 func (fgm *forwardGraphManager) run(ctx context.Context) {
-	fgm.reconstructGraphTimer = time.NewTimer(reconstructGraphDelay)
-
 	for {
 		select {
 		case <-fgm.reconstructGraphTimer.C:
