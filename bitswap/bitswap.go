@@ -57,7 +57,7 @@ type Bitswap struct {
 	net    network.BitSwapNetwork
 }
 
-func New(ctx context.Context, net network.BitSwapNetwork, bstore blockstore.Blockstore, messageListener network.Receiver, options ...Option) *Bitswap {
+func New(ctx context.Context, net network.BitSwapNetwork, bstore blockstore.Blockstore, messageListeners []network.Receiver, options ...Option) *Bitswap {
 	bs := &Bitswap{
 		net: net,
 	}
@@ -94,11 +94,10 @@ func New(ctx context.Context, net network.BitSwapNetwork, bstore blockstore.Bloc
 	bs.Server = server.New(ctx, net, bstore, rm, serverOptions...)
 	bs.Client = client.New(ctx, net, bstore, rm, append(clientOptions, client.WithBlockReceivedNotifier(bs.Server))...)
 	// use the polyfill receiver to log received errors and trace messages only once
-	if messageListener != nil {
-		net.Start(bs, messageListener)
-	} else {
-		net.Start(bs)
-	}
+	receivers := make([]network.Receiver, 0, 1)
+	receivers = append(receivers, bs)
+	receivers = append(receivers, messageListeners...)
+	net.Start(receivers...)
 
 	return bs
 }
