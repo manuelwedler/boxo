@@ -25,7 +25,7 @@ enabled = true
 
 [[testcases]]
 name = "rawa-test"
-instances = { min = 2, max = 100, default = 2 }
+instances = { min = 3, max = 100, default = 10 }
 
   [testcases.params]
   debug = { type = "bool", desc = "show debug logs", default = false }
@@ -36,4 +36,5 @@ instances = { min = 2, max = 100, default = 2 }
   proxy_transition_prob = { type = "float", desc = "probability of transitioning into proxy phase instead of forwarding on each hop", default = 0.2 }
   unforwarded_search_time = { type = "int", desc = "time after which a node queries the content routing subsystem itself", unit = "seconds", default = 10 }
   forward_graph_degree = { type = "int", desc = "degree of the privacy-subgraph, 0 is the complete graph", default = 0 }
-  closest_peerid_forward = { type = "bool", desc = "if enabled, selects the closest peer to a cid when forwarding", default = false }
+  closest_peerid_forward = { type = "bool", desc = "if enabled, selects the closest peer to a cid when forwarding, if not, selects randomly", default = false }
+  first_spy = { type = "bool", desc = "if enabled the first-spy estimator is added to the network", default = false }

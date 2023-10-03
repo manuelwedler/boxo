@@ -67,9 +67,9 @@ func ClearBlockstore(ctx context.Context, bstore blockstore.Blockstore, exclude 
 	return g.Wait()
 }
 
-func CreateBitswapNode(ctx context.Context, h host.Host, bstore blockstore.Blockstore, r bsnet.ContentAndPeerRouting, options ...bs.Option) (*Node, error) {
+func CreateBitswapNode(ctx context.Context, h host.Host, bstore blockstore.Blockstore, r bsnet.ContentAndPeerRouting, messageListeners []bsnet.Receiver, options ...bs.Option) (*Node, error) {
 	net := bsnet.NewFromIpfsHost(h, r)
-	bitswap := bs.New(ctx, net, bstore, options...)
+	bitswap := bs.New(ctx, net, bstore, messageListeners, options...)
 	bserv := blockservice.New(bstore, bitswap)
 	dserv := merkledag.NewDAGService(bserv)
 	return &Node{bitswap, dserv}, nil
