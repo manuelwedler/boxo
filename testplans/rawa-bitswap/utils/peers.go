@@ -27,9 +27,6 @@ func DialOtherPeers(ctx context.Context, self host.Host, ais []peer.AddrInfo, co
 	// Grab list of other peers that are available for this Run
 	var toDial []peer.AddrInfo
 	for _, ai := range ais {
-		if len(toDial) == count {
-			break
-		}
 		id1, _ := ai.ID.MarshalBinary()
 		id2, _ := self.ID().MarshalBinary()
 
