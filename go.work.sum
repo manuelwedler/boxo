@@ -9,7 +9,7 @@ github.com/ipfs/go-verifcid v0.0.2/go.mod h1:40cD9x1y4OWnFXbLNJYRe7MpNvWlMn3LZAG
 github.com/klauspost/cpuid v1.2.0 h1:NMpwD2G9JSFOE1/TJjGSo5zG7Yb2bTe7eq1jH+irmeE=
 github.com/manuelwedler/boxo v0.8.1-0.20230723155441-9ebe1f6a580f/go.mod h1:RIsi4CnTyQ7AUsNn5gXljJYZlQrHBMnJp94p73liFiA=
 github.com/manuelwedler/boxo v0.8.1-0.20230917102806-399d702f184c/go.mod h1:RIsi4CnTyQ7AUsNn5gXljJYZlQrHBMnJp94p73liFiA=
-github.com/manuelwedler/boxo v0.8.1-0.20231003111013-d06b70f785e8/go.mod h1:RIsi4CnTyQ7AUsNn5gXljJYZlQrHBMnJp94p73liFiA=
+github.com/manuelwedler/boxo v0.8.1-0.20231004111850-49641af630b1/go.mod h1:HxhTRxoMUmoYbhc7EAwmp0MzN6bIKGZy1BcIdgB8ftE=
 golang.org/x/crypto v0.0.0-20220525230936-793ad666bf5e/go.mod h1:IxCIyHEi3zRg3s0A5j5BB6A9Jmi73HwBIUl50j+osU4=
 golang.org/x/crypto v0.1.0/go.mod h1:RecgLatLF4+eUMCP1PoPZQb+cVrJcOPbHkTkbkB9sbw=
 golang.org/x/net v0.6.0/go.mod h1:2Tu9+aMcznHK/AK1HMvgo6xiTLG5rD5rZLDS+rp2Bjs=

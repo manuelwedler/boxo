@@ -471,8 +471,8 @@ github.com/logrusorgru/aurora v0.0.0-20191017060258-dc85c304c434/go.mod h1:7rIyQ
 github.com/lunixbochs/vtclean v1.0.0/go.mod h1:pHhQNgMf3btfWnGBVipUOjRYhoOsdGqdm/+2c2E2WMI=
 github.com/mailru/easyjson v0.0.0-20160728113105-d5b7844b561a/go.mod h1:C1wdFJiN94OJF2b5HbByQZoLdCWB1Yqtg26g4irojpc=
 github.com/mailru/easyjson v0.0.0-20190312143242-1de009706dbe/go.mod h1:C1wdFJiN94OJF2b5HbByQZoLdCWB1Yqtg26g4irojpc=
-github.com/manuelwedler/boxo v0.8.1-0.20231003111013-d06b70f785e8 h1:FQFfG0F7UdyT15pHPJKgbcoVs2d7K2feotQOTNbZn4Q=
-github.com/manuelwedler/boxo v0.8.1-0.20231003111013-d06b70f785e8/go.mod h1:RIsi4CnTyQ7AUsNn5gXljJYZlQrHBMnJp94p73liFiA=
+github.com/manuelwedler/boxo v0.8.1-0.20231004111850-49641af630b1 h1:rcf5QjBrSHyP0r2tIwbAE8XhD/QiCXgZhxmYTmN83gM=
+github.com/manuelwedler/boxo v0.8.1-0.20231004111850-49641af630b1/go.mod h1:HxhTRxoMUmoYbhc7EAwmp0MzN6bIKGZy1BcIdgB8ftE=
 github.com/markbates/pkger v0.15.1/go.mod h1:0JoVlrol20BSywW79rN3kdFFsE5xYM+rSCQDXbLhiuI=
 github.com/marten-seemann/tcp v0.0.0-20210406111302-dfbc87cc63fd h1:br0buuQ854V8u83wA0rVZ8ttrq5CpaPZdvrK0LP2lOk=
 github.com/marten-seemann/tcp v0.0.0-20210406111302-dfbc87cc63fd/go.mod h1:QuCEs1Nt24+FYQEqAAncTDPJIuGs+LxK1MCiFL25pMU=

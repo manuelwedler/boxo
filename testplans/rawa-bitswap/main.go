@@ -443,6 +443,21 @@ func runRaWaTest(runenv *runtime.RunEnv, initCtx *run.InitContext) error {
 			runenv.R().RecordPoint("first-spy-estimator-recall", recall)
 		}
 
+		stats, err := bsnode.Bitswap.Stat()
+		if err != nil {
+			return fmt.Errorf("error getting stats from Bitswap: %w", err)
+		}
+
+		// Record unforwarded search triggers
+		if requestor {
+			runenv.R().RecordPoint("unforwarded-search-counter", float64(stats.UnforwardedSearchCounter))
+		}
+
+		// Record proxy distances
+		for _, d := range stats.ProxyDistances {
+			runenv.R().RecordPoint(fmt.Sprintf("proxy-distance,value=%s", d.String()), 0)
+		}
+
 		// Shut down bitswap
 		err = bsnode.Close()
 		if err != nil {
