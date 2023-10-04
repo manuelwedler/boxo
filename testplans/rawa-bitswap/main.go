@@ -114,7 +114,7 @@ func runRaWaTest(runenv *runtime.RunEnv, initCtx *run.InitContext) error {
 		Default:        linkShape,
 		CallbackState:  sync.State("network-configured"),
 		CallbackTarget: runenv.TestGroupInstanceCount,
-		RoutingPolicy:  network.AllowAll,
+		RoutingPolicy:  network.DenyAll,
 	})
 
 	ip := initCtx.NetClient.MustGetDataNetworkIP()
