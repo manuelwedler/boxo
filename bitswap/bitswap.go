@@ -3,6 +3,7 @@ package bitswap
 import (
 	"context"
 	"fmt"
+	"math/big"
 
 	"github.com/ipfs/boxo/bitswap/client"
 	"github.com/ipfs/boxo/bitswap/internal/defaults"
@@ -56,7 +57,7 @@ type Bitswap struct {
 	net    network.BitSwapNetwork
 }
 
-func New(ctx context.Context, net network.BitSwapNetwork, bstore blockstore.Blockstore, options ...Option) *Bitswap {
+func New(ctx context.Context, net network.BitSwapNetwork, bstore blockstore.Blockstore, messageListeners []network.Receiver, options ...Option) *Bitswap {
 	bs := &Bitswap{
 		net: net,
 	}
@@ -91,7 +92,11 @@ func New(ctx context.Context, net network.BitSwapNetwork, bstore blockstore.Bloc
 
 	bs.Server = server.New(ctx, net, bstore, serverOptions...)
 	bs.Client = client.New(ctx, net, bstore, append(clientOptions, client.WithBlockReceivedNotifier(bs.Server))...)
-	net.Start(bs) // use the polyfill receiver to log received errors and trace messages only once
+	// use the polyfill receiver to log received errors and trace messages only once
+	receivers := make([]network.Receiver, 0, 1)
+	receivers = append(receivers, bs)
+	receivers = append(receivers, messageListeners...)
+	net.Start(receivers...)
 
 	return bs
 }
@@ -114,6 +119,9 @@ type Stat struct {
 	BlocksSent       uint64
 	DataSent         uint64
 	ProvideBufLen    int
+
+	UnforwardedSearchCounter uint64
+	ProxyDistances           []*big.Int
 }
 
 func (bs *Bitswap) Stat() (*Stat, error) {
@@ -127,16 +135,18 @@ func (bs *Bitswap) Stat() (*Stat, error) {
 	}
 
 	return &Stat{
-		Wantlist:         cs.Wantlist,
-		BlocksReceived:   cs.BlocksReceived,
-		DataReceived:     cs.DataReceived,
-		DupBlksReceived:  cs.DupBlksReceived,
-		DupDataReceived:  cs.DupDataReceived,
-		MessagesReceived: cs.MessagesReceived,
-		Peers:            ss.Peers,
-		BlocksSent:       ss.BlocksSent,
-		DataSent:         ss.DataSent,
-		ProvideBufLen:    ss.ProvideBufLen,
+		Wantlist:                 cs.Wantlist,
+		BlocksReceived:           cs.BlocksReceived,
+		DataReceived:             cs.DataReceived,
+		DupBlksReceived:          cs.DupBlksReceived,
+		DupDataReceived:          cs.DupDataReceived,
+		MessagesReceived:         cs.MessagesReceived,
+		Peers:                    ss.Peers,
+		BlocksSent:               ss.BlocksSent,
+		DataSent:                 ss.DataSent,
+		ProvideBufLen:            ss.ProvideBufLen,
+		UnforwardedSearchCounter: 0,
+		ProxyDistances:           []*big.Int{},
 	}, nil
 }
 

@@ -76,6 +76,9 @@ type BitSwapMessage interface {
 
 	// Clone the message fields
 	Clone() BitSwapMessage
+
+	// STUB FOR COMPATIBILITY WITH THE RAWA-BITSWAP TESTPLAN
+	Forwardlist() []Entry
 }
 
 // Exportable is an interface for structures than can be
@@ -497,4 +500,8 @@ func (m *impl) Loggable() map[string]interface{} {
 		"blocks": blocks,
 		"wants":  m.Wantlist(),
 	}
+}
+
+func (m *impl) Forwardlist() []Entry {
+	return []Entry{}
 }
