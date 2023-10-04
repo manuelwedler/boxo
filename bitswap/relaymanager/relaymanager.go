@@ -3,6 +3,7 @@ package relaymanager
 import (
 	"context"
 	"fmt"
+	"math/big"
 	"math/rand"
 	"sync"
 	"time"
@@ -11,6 +12,7 @@ import (
 	cid "github.com/ipfs/go-cid"
 	logging "github.com/ipfs/go-log"
 	peer "github.com/libp2p/go-libp2p/core/peer"
+	ks "github.com/whyrusleeping/go-keyspace"
 )
 
 var log = logging.Logger("relaymanager")
@@ -60,6 +62,8 @@ type RelayManager struct {
 	// cid -> relayed to -> want source
 	toMap map[cid.Cid]map[peer.ID]peer.ID
 	lk    sync.RWMutex
+
+	ProxyDistances []*big.Int
 }
 
 func NewRelayManager(peerTagger PeerTagger, self peer.ID) *RelayManager {
@@ -70,9 +74,10 @@ func NewRelayManager(peerTagger PeerTagger, self peer.ID) *RelayManager {
 		peerTagger:          peerTagger,
 		self:                self,
 
-		fromMap:  make(map[cid.Cid]map[peer.ID]peer.ID),
-		proxyMap: make(map[cid.Cid]map[peer.ID]bool),
-		toMap:    make(map[cid.Cid]map[peer.ID]peer.ID),
+		fromMap:        make(map[cid.Cid]map[peer.ID]peer.ID),
+		proxyMap:       make(map[cid.Cid]map[peer.ID]bool),
+		toMap:          make(map[cid.Cid]map[peer.ID]peer.ID),
+		ProxyDistances: make([]*big.Int, 0),
 	}
 }
 
@@ -169,6 +174,7 @@ func (rm *RelayManager) startProxyPhase(ctx context.Context, sender peer.ID, c c
 		rm.RelayHaves(innerCtx, returnTo, k, []peer.AddrInfo{provider})
 	}
 
+	rm.addProxyDistance(c)
 	session := rm.CreateProxySession(ctx, proxyDiscoveryCallback)
 	session.GetBlocks(ctx, []cid.Cid{c})
 }
@@ -233,6 +239,12 @@ func (rm *RelayManager) ForwardSearch(ctx context.Context, c cid.Cid) error {
 	rm.fromMap[c][rm.self] = forwardedTo
 	rm.toMap[c][forwardedTo] = rm.self
 	return nil
+}
+
+func (rm *RelayManager) addProxyDistance(c cid.Cid) {
+	key := ks.XORKeySpace.Key([]byte(c.String()))
+	d := ks.XORKeySpace.Key([]byte(rm.self)).Distance(key)
+	rm.ProxyDistances = append(rm.ProxyDistances, d)
 }
 
 type keyTracker struct {

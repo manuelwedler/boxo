@@ -67,6 +67,8 @@ func newFakePeerTagger() *fakePeerTagger {
 	}
 }
 
+func (msm *mockSessionMgr) IncrementUnforwardedSearchCounter() {}
+
 type fakePeerTagger struct {
 	lk             sync.Mutex
 	protectedPeers map[peer.ID]map[string]struct{}

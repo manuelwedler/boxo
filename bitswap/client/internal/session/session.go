@@ -52,6 +52,8 @@ type SessionManager interface {
 	RemoveSession(sesid uint64)
 	// Cancel wants (called when a call to GetBlocks() is cancelled)
 	CancelSessionWants(sid uint64, wants []cid.Cid)
+
+	IncrementUnforwardedSearchCounter()
 }
 
 // SessionPeerManager keeps track of peers in the session
@@ -595,6 +597,7 @@ func (s *Session) forwardWants(ctx context.Context, wants []cid.Cid) {
 		go func(k cid.Cid) {
 			select {
 			case <-forwardTimer.C:
+				s.sm.IncrementUnforwardedSearchCounter()
 				s.stopUnforwardedSearchTimer(k)
 				s.findMorePeers(ctx, k)
 				return

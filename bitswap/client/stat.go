@@ -1,6 +1,8 @@
 package client
 
 import (
+	"math/big"
+
 	cid "github.com/ipfs/go-cid"
 )
 
@@ -12,11 +14,16 @@ type Stat struct {
 	DupBlksReceived  uint64
 	DupDataReceived  uint64
 	MessagesReceived uint64
+
+	UnforwardedSearchCounter uint64
+	ProxyDistances           []*big.Int
 }
 
 // Stat returns aggregated statistics about bitswap operations
 func (bs *Client) Stat() (st Stat, err error) {
 	bs.counterLk.Lock()
+	st.UnforwardedSearchCounter = bs.sm.UnforwardedSearchCounter
+	st.ProxyDistances = bs.rm.ProxyDistances
 	c := bs.counters
 	st.BlocksReceived = c.blocksRecvd
 	st.DupBlksReceived = c.dupBlocksRecvd

@@ -72,6 +72,9 @@ type SessionManager struct {
 	sessID   uint64
 
 	self peer.ID
+
+	usCounterLk              sync.RWMutex
+	UnforwardedSearchCounter uint64
 }
 
 // New creates a new SessionManager.
@@ -79,15 +82,16 @@ func New(ctx context.Context, sessionFactory SessionFactory, sessionInterestMana
 	blockPresenceManager *bsbpm.BlockPresenceManager, peerManager bssession.PeerManager, notif notifications.PubSub, self peer.ID) *SessionManager {
 
 	return &SessionManager{
-		ctx:                    ctx,
-		sessionFactory:         sessionFactory,
-		sessionInterestManager: sessionInterestManager,
-		peerManagerFactory:     peerManagerFactory,
-		blockPresenceManager:   blockPresenceManager,
-		peerManager:            peerManager,
-		notif:                  notif,
-		sessions:               make(map[uint64]Session),
-		self:                   self,
+		ctx:                      ctx,
+		sessionFactory:           sessionFactory,
+		sessionInterestManager:   sessionInterestManager,
+		peerManagerFactory:       peerManagerFactory,
+		blockPresenceManager:     blockPresenceManager,
+		peerManager:              peerManager,
+		notif:                    notif,
+		sessions:                 make(map[uint64]Session),
+		self:                     self,
+		UnforwardedSearchCounter: 0,
 	}
 }
 
@@ -257,4 +261,10 @@ func (sm *SessionManager) cancelWants(wants []cid.Cid) {
 	// anymore.
 	// Note: use bitswap context because session context may already be Done.
 	sm.peerManager.SendCancels(sm.ctx, wants)
+}
+
+func (sm *SessionManager) IncrementUnforwardedSearchCounter() {
+	sm.usCounterLk.Lock()
+	defer sm.usCounterLk.Unlock()
+	sm.UnforwardedSearchCounter += 1
 }

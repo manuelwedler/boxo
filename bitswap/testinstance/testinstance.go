@@ -120,7 +120,7 @@ func NewInstance(ctx context.Context, net tn.Network, p tnet.Identity, netOption
 		panic(err.Error()) // FIXME perhaps change signature and return error.
 	}
 
-	bs := bitswap.New(ctx, adapter, bstore, bsOptions...)
+	bs := bitswap.New(ctx, adapter, bstore, []bsnet.Receiver{}, bsOptions...)
 
 	return Instance{
 		Adapter:         adapter,
