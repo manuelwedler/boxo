@@ -6,13 +6,13 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/ipfs/boxo/ipld/merkledag"
 	blocks "github.com/ipfs/go-block-format"
 	cid "github.com/ipfs/go-cid"
 	cbor "github.com/ipfs/go-ipld-cbor"
 	format "github.com/ipfs/go-ipld-format"
+	"github.com/manuelwedler/boxo/ipld/merkledag"
 
-	util "github.com/ipfs/boxo/ipld/car/util"
+	util "github.com/manuelwedler/boxo/ipld/car/util"
 )
 
 func init() {

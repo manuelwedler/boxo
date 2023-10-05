@@ -8,7 +8,7 @@ import (
 	"github.com/ipfs/go-cid"
 	ipld "github.com/ipfs/go-ipld-format"
 
-	dag "github.com/ipfs/boxo/ipld/merkledag"
+	dag "github.com/manuelwedler/boxo/ipld/merkledag"
 )
 
 // ChangeType denotes type of change in Change

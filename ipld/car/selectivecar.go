@@ -8,13 +8,13 @@ import (
 	"io"
 	"math"
 
-	util "github.com/ipfs/boxo/ipld/car/util"
 	cid "github.com/ipfs/go-cid"
 	"github.com/ipld/go-ipld-prime"
 	cidlink "github.com/ipld/go-ipld-prime/linking/cid"
 	basicnode "github.com/ipld/go-ipld-prime/node/basic"
 	"github.com/ipld/go-ipld-prime/traversal"
 	"github.com/ipld/go-ipld-prime/traversal/selector"
+	util "github.com/manuelwedler/boxo/ipld/car/util"
 
 	// The dag-pb and raw codecs are necessary for unixfs.
 	dagpb "github.com/ipld/go-codec-dagpb"

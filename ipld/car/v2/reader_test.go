@@ -8,10 +8,10 @@ import (
 	"strings"
 	"testing"
 
-	carv2 "github.com/ipfs/boxo/ipld/car/v2"
-	"github.com/ipfs/boxo/ipld/car/v2/index"
-	"github.com/ipfs/boxo/ipld/car/v2/internal/carv1"
 	"github.com/ipfs/go-cid"
+	carv2 "github.com/manuelwedler/boxo/ipld/car/v2"
+	"github.com/manuelwedler/boxo/ipld/car/v2/index"
+	"github.com/manuelwedler/boxo/ipld/car/v2/internal/carv1"
 	"github.com/multiformats/go-multicodec"
 	"github.com/stretchr/testify/require"
 )

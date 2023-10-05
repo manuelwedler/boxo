@@ -6,8 +6,8 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	carv2 "github.com/ipfs/boxo/ipld/car/v2"
-	"github.com/ipfs/boxo/ipld/car/v2/internal/carv1"
+	carv2 "github.com/manuelwedler/boxo/ipld/car/v2"
+	"github.com/manuelwedler/boxo/ipld/car/v2/internal/carv1"
 	"github.com/stretchr/testify/assert"
 )
 

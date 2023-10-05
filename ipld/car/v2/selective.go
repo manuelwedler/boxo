@@ -7,9 +7,6 @@ import (
 	"math"
 	"os"
 
-	"github.com/ipfs/boxo/ipld/car/v2/index"
-	"github.com/ipfs/boxo/ipld/car/v2/internal/carv1"
-	"github.com/ipfs/boxo/ipld/car/v2/internal/loader"
 	"github.com/ipfs/go-cid"
 	ipld "github.com/ipld/go-ipld-prime"
 	"github.com/ipld/go-ipld-prime/datamodel"
@@ -18,6 +15,9 @@ import (
 	"github.com/ipld/go-ipld-prime/node/basicnode"
 	"github.com/ipld/go-ipld-prime/traversal"
 	"github.com/ipld/go-ipld-prime/traversal/selector"
+	"github.com/manuelwedler/boxo/ipld/car/v2/index"
+	"github.com/manuelwedler/boxo/ipld/car/v2/internal/carv1"
+	"github.com/manuelwedler/boxo/ipld/car/v2/internal/loader"
 )
 
 // ErrSizeMismatch is returned when a written traversal realizes the written header size does not

@@ -8,12 +8,12 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/ipfs/boxo/blockservice"
-	"github.com/ipfs/boxo/examples/gateway/common"
-	offline "github.com/ipfs/boxo/exchange/offline"
-	"github.com/ipfs/boxo/gateway"
-	carblockstore "github.com/ipfs/boxo/ipld/car/v2/blockstore"
 	"github.com/ipfs/go-cid"
+	"github.com/manuelwedler/boxo/blockservice"
+	"github.com/manuelwedler/boxo/examples/gateway/common"
+	offline "github.com/manuelwedler/boxo/exchange/offline"
+	"github.com/manuelwedler/boxo/gateway"
+	carblockstore "github.com/manuelwedler/boxo/ipld/car/v2/blockstore"
 )
 
 func main() {

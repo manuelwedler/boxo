@@ -6,7 +6,7 @@ import (
 	"math/rand"
 	"testing"
 
-	"github.com/ipfs/boxo/ipld/car/util"
+	"github.com/manuelwedler/boxo/ipld/car/util"
 	"github.com/stretchr/testify/require"
 )
 

@@ -8,9 +8,9 @@ import (
 	"sync/atomic"
 	"time"
 
-	bsmsg "github.com/ipfs/boxo/bitswap/message"
-	"github.com/ipfs/boxo/bitswap/network/internal"
 	"github.com/libp2p/go-libp2p/core/peerstore"
+	bsmsg "github.com/manuelwedler/boxo/bitswap/message"
+	"github.com/manuelwedler/boxo/bitswap/network/internal"
 
 	cid "github.com/ipfs/go-cid"
 	logging "github.com/ipfs/go-log"

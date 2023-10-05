@@ -6,11 +6,11 @@ import (
 	"context"
 	"fmt"
 
-	blockstore "github.com/ipfs/boxo/blockstore"
-	exchange "github.com/ipfs/boxo/exchange"
 	blocks "github.com/ipfs/go-block-format"
 	cid "github.com/ipfs/go-cid"
 	ipld "github.com/ipfs/go-ipld-format"
+	blockstore "github.com/manuelwedler/boxo/blockstore"
+	exchange "github.com/manuelwedler/boxo/exchange"
 )
 
 func Exchange(bs blockstore.Blockstore) exchange.Interface {

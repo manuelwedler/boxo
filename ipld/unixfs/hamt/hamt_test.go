@@ -9,10 +9,10 @@ import (
 	"testing"
 	"time"
 
-	dag "github.com/ipfs/boxo/ipld/merkledag"
-	mdtest "github.com/ipfs/boxo/ipld/merkledag/test"
-	ft "github.com/ipfs/boxo/ipld/unixfs"
 	ipld "github.com/ipfs/go-ipld-format"
+	dag "github.com/manuelwedler/boxo/ipld/merkledag"
+	mdtest "github.com/manuelwedler/boxo/ipld/merkledag/test"
+	ft "github.com/manuelwedler/boxo/ipld/unixfs"
 )
 
 func shuffle(seed int64, arr []string) {

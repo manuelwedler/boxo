@@ -3,8 +3,8 @@ package session
 import (
 	"testing"
 
-	"github.com/ipfs/boxo/bitswap/internal/testutil"
-	"github.com/ipfs/boxo/internal/test"
+	"github.com/manuelwedler/boxo/bitswap/internal/testutil"
+	"github.com/manuelwedler/boxo/internal/test"
 )
 
 func TestSendWantBlocksTracker(t *testing.T) {

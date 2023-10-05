@@ -8,7 +8,6 @@ import (
 	"sync"
 	"sync/atomic"
 
-	dshelp "github.com/ipfs/boxo/datastore/dshelp"
 	blocks "github.com/ipfs/go-block-format"
 	cid "github.com/ipfs/go-cid"
 	ds "github.com/ipfs/go-datastore"
@@ -16,6 +15,7 @@ import (
 	dsq "github.com/ipfs/go-datastore/query"
 	ipld "github.com/ipfs/go-ipld-format"
 	logging "github.com/ipfs/go-log"
+	dshelp "github.com/manuelwedler/boxo/datastore/dshelp"
 	uatomic "go.uber.org/atomic"
 )
 

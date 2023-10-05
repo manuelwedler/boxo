@@ -6,16 +6,16 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ipfs/boxo/path"
+	"github.com/manuelwedler/boxo/path"
 
-	dshelp "github.com/ipfs/boxo/datastore/dshelp"
-	"github.com/ipfs/boxo/ipns"
-	mockrouting "github.com/ipfs/boxo/routing/mock"
 	ds "github.com/ipfs/go-datastore"
 	dssync "github.com/ipfs/go-datastore/sync"
 	testutil "github.com/libp2p/go-libp2p-testing/net"
 	ci "github.com/libp2p/go-libp2p/core/crypto"
 	"github.com/libp2p/go-libp2p/core/peer"
+	dshelp "github.com/manuelwedler/boxo/datastore/dshelp"
+	"github.com/manuelwedler/boxo/ipns"
+	mockrouting "github.com/manuelwedler/boxo/routing/mock"
 	ma "github.com/multiformats/go-multiaddr"
 )
 

@@ -7,9 +7,9 @@ import (
 	"strings"
 	"testing"
 
-	path "github.com/ipfs/boxo/coreiface/path"
+	path "github.com/manuelwedler/boxo/coreiface/path"
 
-	coreiface "github.com/ipfs/boxo/coreiface"
+	coreiface "github.com/manuelwedler/boxo/coreiface"
 
 	ipldcbor "github.com/ipfs/go-ipld-cbor"
 	ipld "github.com/ipfs/go-ipld-format"

@@ -6,8 +6,8 @@ import (
 	"os"
 	"time"
 
-	pinclient "github.com/ipfs/boxo/pinning/remote/client"
 	"github.com/ipfs/go-cid"
+	pinclient "github.com/manuelwedler/boxo/pinning/remote/client"
 )
 
 func main() {

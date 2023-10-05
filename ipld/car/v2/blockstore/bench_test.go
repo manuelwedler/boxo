@@ -7,9 +7,9 @@ import (
 	"os"
 	"testing"
 
-	carv2 "github.com/ipfs/boxo/ipld/car/v2"
-	"github.com/ipfs/boxo/ipld/car/v2/blockstore"
 	"github.com/ipfs/go-cid"
+	carv2 "github.com/manuelwedler/boxo/ipld/car/v2"
+	"github.com/manuelwedler/boxo/ipld/car/v2/blockstore"
 )
 
 // BenchmarkOpenReadOnlyV1 opens a read-only blockstore,

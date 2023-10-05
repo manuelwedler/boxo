@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"time"
 
-	ipath "github.com/ipfs/boxo/coreiface/path"
+	ipath "github.com/manuelwedler/boxo/coreiface/path"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 )

@@ -12,8 +12,8 @@ import (
 	dssync "github.com/ipfs/go-datastore/sync"
 	mh "github.com/multiformats/go-multihash"
 
-	"github.com/ipfs/boxo/internal/test"
-	q "github.com/ipfs/boxo/provider/queue"
+	"github.com/manuelwedler/boxo/internal/test"
+	q "github.com/manuelwedler/boxo/provider/queue"
 )
 
 type mockProvideMany struct {

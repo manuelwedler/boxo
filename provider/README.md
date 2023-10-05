@@ -7,9 +7,9 @@ import (
 	"context"
 	"time"
 
-	"github.com/ipfs/boxo/provider"
-	"github.com/ipfs/boxo/provider/queue"
-	"github.com/ipfs/boxo/provider/simple"
+	"github.com/manuelwedler/boxo/provider"
+	"github.com/manuelwedler/boxo/provider/queue"
+	"github.com/manuelwedler/boxo/provider/simple"
 )
 
 rsys := (your routing system here)

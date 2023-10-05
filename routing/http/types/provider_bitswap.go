@@ -6,9 +6,9 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/ipfs/boxo/routing/http/internal/drjson"
 	"github.com/libp2p/go-libp2p/core/crypto"
 	"github.com/libp2p/go-libp2p/core/peer"
+	"github.com/manuelwedler/boxo/routing/http/internal/drjson"
 	"github.com/multiformats/go-multibase"
 )
 

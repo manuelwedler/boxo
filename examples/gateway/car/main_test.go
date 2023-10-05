@@ -6,10 +6,10 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/ipfs/boxo/examples/gateway/common"
-	"github.com/ipfs/boxo/gateway"
 	"github.com/ipld/go-ipld-prime/codec/dagjson"
 	"github.com/ipld/go-ipld-prime/node/basicnode"
+	"github.com/manuelwedler/boxo/examples/gateway/common"
+	"github.com/manuelwedler/boxo/gateway"
 	"github.com/stretchr/testify/assert"
 )
 

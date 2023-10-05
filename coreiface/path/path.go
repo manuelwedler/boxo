@@ -3,8 +3,8 @@ package path
 import (
 	"strings"
 
-	ipfspath "github.com/ipfs/boxo/path"
 	cid "github.com/ipfs/go-cid"
+	ipfspath "github.com/manuelwedler/boxo/path"
 )
 
 // Path is a generic wrapper for paths used in the API. A path can be resolved

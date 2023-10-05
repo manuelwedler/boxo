@@ -10,10 +10,6 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 
-	"github.com/ipfs/boxo/fetcher"
-	fetcherhelpers "github.com/ipfs/boxo/fetcher/helpers"
-	path "github.com/ipfs/boxo/path"
-	"github.com/ipfs/boxo/path/internal"
 	cid "github.com/ipfs/go-cid"
 	format "github.com/ipfs/go-ipld-format"
 	logging "github.com/ipfs/go-log"
@@ -22,6 +18,10 @@ import (
 	basicnode "github.com/ipld/go-ipld-prime/node/basic"
 	"github.com/ipld/go-ipld-prime/schema"
 	"github.com/ipld/go-ipld-prime/traversal/selector/builder"
+	"github.com/manuelwedler/boxo/fetcher"
+	fetcherhelpers "github.com/manuelwedler/boxo/fetcher/helpers"
+	path "github.com/manuelwedler/boxo/path"
+	"github.com/manuelwedler/boxo/path/internal"
 )
 
 var log = logging.Logger("pathresolv")

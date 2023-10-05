@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/ipfs/boxo/pinning/remote/client/openapi"
 	"github.com/ipfs/go-cid"
+	"github.com/manuelwedler/boxo/pinning/remote/client/openapi"
 	"github.com/multiformats/go-multiaddr"
 )
 

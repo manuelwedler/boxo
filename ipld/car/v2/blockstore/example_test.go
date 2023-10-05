@@ -7,11 +7,11 @@ import (
 	"path/filepath"
 	"time"
 
-	carv2 "github.com/ipfs/boxo/ipld/car/v2"
-	"github.com/ipfs/boxo/ipld/car/v2/blockstore"
-	"github.com/ipfs/boxo/ipld/merkledag"
 	blocks "github.com/ipfs/go-block-format"
 	"github.com/ipfs/go-cid"
+	carv2 "github.com/manuelwedler/boxo/ipld/car/v2"
+	"github.com/manuelwedler/boxo/ipld/car/v2/blockstore"
+	"github.com/manuelwedler/boxo/ipld/merkledag"
 )
 
 const cidPrintCount = 5

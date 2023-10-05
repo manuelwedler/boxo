@@ -6,9 +6,9 @@ import (
 	"io"
 	"time"
 
-	"github.com/ipfs/boxo/coreiface/path"
-	"github.com/ipfs/boxo/files"
 	"github.com/ipfs/go-cid"
+	"github.com/manuelwedler/boxo/coreiface/path"
+	"github.com/manuelwedler/boxo/files"
 	prometheus "github.com/prometheus/client_golang/prometheus"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"

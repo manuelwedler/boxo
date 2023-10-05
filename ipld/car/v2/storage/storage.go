@@ -8,14 +8,14 @@ import (
 	"io"
 	"sync"
 
-	carv2 "github.com/ipfs/boxo/ipld/car/v2"
-	"github.com/ipfs/boxo/ipld/car/v2/index"
-	"github.com/ipfs/boxo/ipld/car/v2/internal/carv1"
-	"github.com/ipfs/boxo/ipld/car/v2/internal/carv1/util"
-	internalio "github.com/ipfs/boxo/ipld/car/v2/internal/io"
-	"github.com/ipfs/boxo/ipld/car/v2/internal/store"
 	"github.com/ipfs/go-cid"
 	ipldstorage "github.com/ipld/go-ipld-prime/storage"
+	carv2 "github.com/manuelwedler/boxo/ipld/car/v2"
+	"github.com/manuelwedler/boxo/ipld/car/v2/index"
+	"github.com/manuelwedler/boxo/ipld/car/v2/internal/carv1"
+	"github.com/manuelwedler/boxo/ipld/car/v2/internal/carv1/util"
+	internalio "github.com/manuelwedler/boxo/ipld/car/v2/internal/io"
+	"github.com/manuelwedler/boxo/ipld/car/v2/internal/store"
 )
 
 var errClosed = errors.New("cannot use a CARv2 storage after closing")

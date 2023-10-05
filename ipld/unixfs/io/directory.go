@@ -5,15 +5,15 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/ipfs/boxo/ipld/unixfs/hamt"
-	"github.com/ipfs/boxo/ipld/unixfs/private/linksize"
+	"github.com/manuelwedler/boxo/ipld/unixfs/hamt"
+	"github.com/manuelwedler/boxo/ipld/unixfs/private/linksize"
 
 	"github.com/alecthomas/units"
-	mdag "github.com/ipfs/boxo/ipld/merkledag"
-	format "github.com/ipfs/boxo/ipld/unixfs"
 	"github.com/ipfs/go-cid"
 	ipld "github.com/ipfs/go-ipld-format"
 	logging "github.com/ipfs/go-log"
+	mdag "github.com/manuelwedler/boxo/ipld/merkledag"
+	format "github.com/manuelwedler/boxo/ipld/unixfs"
 )
 
 var log = logging.Logger("unixfs")

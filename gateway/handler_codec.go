@@ -9,11 +9,11 @@ import (
 	"strings"
 	"time"
 
-	ipath "github.com/ipfs/boxo/coreiface/path"
-	"github.com/ipfs/boxo/gateway/assets"
 	"github.com/ipfs/go-cid"
 	"github.com/ipld/go-ipld-prime/multicodec"
 	"github.com/ipld/go-ipld-prime/node/basicnode"
+	ipath "github.com/manuelwedler/boxo/coreiface/path"
+	"github.com/manuelwedler/boxo/gateway/assets"
 	mc "github.com/multiformats/go-multicodec"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"

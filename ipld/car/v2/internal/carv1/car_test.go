@@ -11,10 +11,10 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/ipfs/boxo/ipld/merkledag"
-	dstest "github.com/ipfs/boxo/ipld/merkledag/test"
 	cid "github.com/ipfs/go-cid"
 	format "github.com/ipfs/go-ipld-format"
+	"github.com/manuelwedler/boxo/ipld/merkledag"
+	dstest "github.com/manuelwedler/boxo/ipld/merkledag/test"
 )
 
 func assertAddNodes(t *testing.T, ds format.DAGService, nds ...format.Node) {

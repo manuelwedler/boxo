@@ -9,11 +9,11 @@ import (
 	"strings"
 
 	"github.com/gogo/protobuf/proto"
-	"github.com/ipfs/boxo/ipns"
-	ipns_pb "github.com/ipfs/boxo/ipns/pb"
 	ic "github.com/libp2p/go-libp2p/core/crypto"
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/libp2p/go-libp2p/core/routing"
+	"github.com/manuelwedler/boxo/ipns"
+	ipns_pb "github.com/manuelwedler/boxo/ipns/pb"
 )
 
 type proxyRouting struct {

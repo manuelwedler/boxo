@@ -5,11 +5,11 @@ import (
 	"testing"
 	"time"
 
-	u "github.com/ipfs/boxo/util"
 	"github.com/ipfs/go-cid"
 	delay "github.com/ipfs/go-ipfs-delay"
 	tnet "github.com/libp2p/go-libp2p-testing/net"
 	"github.com/libp2p/go-libp2p/core/peer"
+	u "github.com/manuelwedler/boxo/util"
 )
 
 func TestKeyNotFound(t *testing.T) {

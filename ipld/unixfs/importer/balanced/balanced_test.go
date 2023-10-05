@@ -8,14 +8,14 @@ import (
 	mrand "math/rand"
 	"testing"
 
-	h "github.com/ipfs/boxo/ipld/unixfs/importer/helpers"
-	uio "github.com/ipfs/boxo/ipld/unixfs/io"
+	h "github.com/manuelwedler/boxo/ipld/unixfs/importer/helpers"
+	uio "github.com/manuelwedler/boxo/ipld/unixfs/io"
 
-	chunker "github.com/ipfs/boxo/chunker"
-	dag "github.com/ipfs/boxo/ipld/merkledag"
-	mdtest "github.com/ipfs/boxo/ipld/merkledag/test"
-	u "github.com/ipfs/boxo/util"
 	ipld "github.com/ipfs/go-ipld-format"
+	chunker "github.com/manuelwedler/boxo/chunker"
+	dag "github.com/manuelwedler/boxo/ipld/merkledag"
+	mdtest "github.com/manuelwedler/boxo/ipld/merkledag/test"
+	u "github.com/manuelwedler/boxo/util"
 )
 
 // TODO: extract these tests and more as a generic layout test suite

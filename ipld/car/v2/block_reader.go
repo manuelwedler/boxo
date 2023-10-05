@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/ipfs/boxo/ipld/car/v2/internal/carv1"
-	"github.com/ipfs/boxo/ipld/car/v2/internal/carv1/util"
-	internalio "github.com/ipfs/boxo/ipld/car/v2/internal/io"
 	blocks "github.com/ipfs/go-block-format"
 	"github.com/ipfs/go-cid"
+	"github.com/manuelwedler/boxo/ipld/car/v2/internal/carv1"
+	"github.com/manuelwedler/boxo/ipld/car/v2/internal/carv1/util"
+	internalio "github.com/manuelwedler/boxo/ipld/car/v2/internal/io"
 	"github.com/multiformats/go-varint"
 )
 

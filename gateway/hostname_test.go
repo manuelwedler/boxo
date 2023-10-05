@@ -7,8 +7,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	path "github.com/ipfs/boxo/path"
 	cid "github.com/ipfs/go-cid"
+	path "github.com/manuelwedler/boxo/path"
 	"github.com/stretchr/testify/assert"
 )
 

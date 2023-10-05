@@ -10,11 +10,11 @@ import (
 	"testing"
 	"time"
 
-	ipath "github.com/ipfs/boxo/coreiface/path"
-	"github.com/ipfs/boxo/files"
-	"github.com/ipfs/boxo/path/resolver"
 	cid "github.com/ipfs/go-cid"
 	ipld "github.com/ipfs/go-ipld-format"
+	ipath "github.com/manuelwedler/boxo/coreiface/path"
+	"github.com/manuelwedler/boxo/files"
+	"github.com/manuelwedler/boxo/path/resolver"
 	"github.com/stretchr/testify/assert"
 )
 

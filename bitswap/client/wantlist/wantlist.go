@@ -5,7 +5,7 @@ package wantlist
 import (
 	"sort"
 
-	pb "github.com/ipfs/boxo/bitswap/message/pb"
+	pb "github.com/manuelwedler/boxo/bitswap/message/pb"
 
 	cid "github.com/ipfs/go-cid"
 )

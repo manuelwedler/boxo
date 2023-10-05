@@ -4,8 +4,8 @@ import (
 	"math"
 	"testing"
 
-	carv2 "github.com/ipfs/boxo/ipld/car/v2"
-	"github.com/ipfs/boxo/ipld/car/v2/blockstore"
+	carv2 "github.com/manuelwedler/boxo/ipld/car/v2"
+	"github.com/manuelwedler/boxo/ipld/car/v2/blockstore"
 	"github.com/multiformats/go-multicodec"
 	"github.com/stretchr/testify/require"
 )

@@ -3,11 +3,11 @@ package helpers
 import (
 	"context"
 
-	"github.com/ipfs/boxo/fetcher"
 	"github.com/ipld/go-ipld-prime"
 	basicnode "github.com/ipld/go-ipld-prime/node/basic"
 	"github.com/ipld/go-ipld-prime/traversal/selector"
 	"github.com/ipld/go-ipld-prime/traversal/selector/builder"
+	"github.com/manuelwedler/boxo/fetcher"
 )
 
 var matchAllSelector ipld.Node

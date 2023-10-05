@@ -7,9 +7,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ipfs/boxo/bitswap/internal/testutil"
-	blockstore "github.com/ipfs/boxo/blockstore"
-	"github.com/ipfs/boxo/internal/test"
 	blocks "github.com/ipfs/go-block-format"
 	cid "github.com/ipfs/go-cid"
 	ds "github.com/ipfs/go-datastore"
@@ -17,6 +14,9 @@ import (
 	ds_sync "github.com/ipfs/go-datastore/sync"
 	delay "github.com/ipfs/go-ipfs-delay"
 	"github.com/ipfs/go-metrics-interface"
+	"github.com/manuelwedler/boxo/bitswap/internal/testutil"
+	blockstore "github.com/manuelwedler/boxo/blockstore"
+	"github.com/manuelwedler/boxo/internal/test"
 )
 
 func newBlockstoreManagerForTesting(

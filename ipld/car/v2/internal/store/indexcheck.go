@@ -1,8 +1,8 @@
 package store
 
 import (
-	carv2 "github.com/ipfs/boxo/ipld/car/v2"
 	"github.com/ipfs/go-cid"
+	carv2 "github.com/manuelwedler/boxo/ipld/car/v2"
 )
 
 // ShouldPut returns true if the block should be put into the CAR according to the options provided

@@ -5,14 +5,14 @@ import (
 	"os"
 	"testing"
 
-	bs "github.com/ipfs/boxo/blockservice"
-	blockstore "github.com/ipfs/boxo/blockstore"
-	offline "github.com/ipfs/boxo/exchange/offline"
-	mdag "github.com/ipfs/boxo/ipld/merkledag"
 	ds "github.com/ipfs/go-datastore"
 	bds "github.com/ipfs/go-ds-badger"
 	lds "github.com/ipfs/go-ds-leveldb"
 	ipld "github.com/ipfs/go-ipld-format"
+	bs "github.com/manuelwedler/boxo/blockservice"
+	blockstore "github.com/manuelwedler/boxo/blockstore"
+	offline "github.com/manuelwedler/boxo/exchange/offline"
+	mdag "github.com/manuelwedler/boxo/ipld/merkledag"
 )
 
 func makeStoreLevelDB(dir string) (ds.Datastore, ipld.DAGService) {

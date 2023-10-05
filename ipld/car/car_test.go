@@ -8,11 +8,11 @@ import (
 	"strings"
 	"testing"
 
-	car "github.com/ipfs/boxo/ipld/car"
-	"github.com/ipfs/boxo/ipld/merkledag"
-	dstest "github.com/ipfs/boxo/ipld/merkledag/test"
 	"github.com/ipfs/go-cid"
 	format "github.com/ipfs/go-ipld-format"
+	car "github.com/manuelwedler/boxo/ipld/car"
+	"github.com/manuelwedler/boxo/ipld/merkledag"
+	dstest "github.com/manuelwedler/boxo/ipld/merkledag/test"
 )
 
 func assertAddNodes(t *testing.T, ds format.DAGService, nds ...format.Node) {

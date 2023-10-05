@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"io"
 
-	internalio "github.com/ipfs/boxo/ipld/car/v2/internal/io"
 	"github.com/ipfs/go-cid"
+	internalio "github.com/manuelwedler/boxo/ipld/car/v2/internal/io"
 
 	"github.com/multiformats/go-multicodec"
 	"github.com/multiformats/go-multihash"

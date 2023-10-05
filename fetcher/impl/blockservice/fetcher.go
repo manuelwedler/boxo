@@ -6,14 +6,14 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/ipfs/boxo/blockservice"
-	"github.com/ipfs/boxo/fetcher"
 	"github.com/ipld/go-ipld-prime"
 	cidlink "github.com/ipld/go-ipld-prime/linking/cid"
 	basicnode "github.com/ipld/go-ipld-prime/node/basic"
 	"github.com/ipld/go-ipld-prime/schema"
 	"github.com/ipld/go-ipld-prime/traversal"
 	"github.com/ipld/go-ipld-prime/traversal/selector"
+	"github.com/manuelwedler/boxo/blockservice"
+	"github.com/manuelwedler/boxo/fetcher"
 )
 
 type fetcherSession struct {

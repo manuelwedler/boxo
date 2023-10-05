@@ -6,17 +6,17 @@ import (
 	"testing"
 	"time"
 
-	bsbpm "github.com/ipfs/boxo/bitswap/client/internal/blockpresencemanager"
-	notifications "github.com/ipfs/boxo/bitswap/client/internal/notifications"
-	bspm "github.com/ipfs/boxo/bitswap/client/internal/peermanager"
-	bssim "github.com/ipfs/boxo/bitswap/client/internal/sessioninterestmanager"
-	bsspm "github.com/ipfs/boxo/bitswap/client/internal/sessionpeermanager"
-	"github.com/ipfs/boxo/bitswap/internal/testutil"
-	"github.com/ipfs/boxo/internal/test"
 	cid "github.com/ipfs/go-cid"
 	blocksutil "github.com/ipfs/go-ipfs-blocksutil"
 	delay "github.com/ipfs/go-ipfs-delay"
 	peer "github.com/libp2p/go-libp2p/core/peer"
+	bsbpm "github.com/manuelwedler/boxo/bitswap/client/internal/blockpresencemanager"
+	notifications "github.com/manuelwedler/boxo/bitswap/client/internal/notifications"
+	bspm "github.com/manuelwedler/boxo/bitswap/client/internal/peermanager"
+	bssim "github.com/manuelwedler/boxo/bitswap/client/internal/sessioninterestmanager"
+	bsspm "github.com/manuelwedler/boxo/bitswap/client/internal/sessionpeermanager"
+	"github.com/manuelwedler/boxo/bitswap/internal/testutil"
+	"github.com/manuelwedler/boxo/internal/test"
 )
 
 type mockSessionMgr struct {

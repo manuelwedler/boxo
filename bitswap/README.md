@@ -41,7 +41,7 @@ wants those blocks.
 import (
   "context"
   bitswap "github.com/ipfs/boxo/bitswap"
-  bsnet "github.com/ipfs/boxo/bitswap/network"
+  bsnet "github.com/manuelwedler/boxo/bitswap/network"
   blockstore "github.com/ipfs/go-ipfs-blockstore"
   "github.com/libp2p/go-libp2p-core/routing"
   "github.com/libp2p/go-libp2p-core/host"

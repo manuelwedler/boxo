@@ -4,7 +4,7 @@ import (
 	"encoding/binary"
 	"testing"
 
-	"github.com/ipfs/boxo/ipld/merkledag"
+	"github.com/manuelwedler/boxo/ipld/merkledag"
 	"github.com/multiformats/go-multicodec"
 	"github.com/stretchr/testify/require"
 )

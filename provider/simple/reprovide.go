@@ -7,15 +7,15 @@ import (
 	"time"
 
 	"github.com/cenkalti/backoff"
-	blocks "github.com/ipfs/boxo/blockstore"
-	"github.com/ipfs/boxo/fetcher"
-	fetcherhelpers "github.com/ipfs/boxo/fetcher/helpers"
-	"github.com/ipfs/boxo/verifcid"
 	"github.com/ipfs/go-cid"
 	"github.com/ipfs/go-cidutil"
 	logging "github.com/ipfs/go-log"
 	cidlink "github.com/ipld/go-ipld-prime/linking/cid"
 	"github.com/libp2p/go-libp2p/core/routing"
+	blocks "github.com/manuelwedler/boxo/blockstore"
+	"github.com/manuelwedler/boxo/fetcher"
+	fetcherhelpers "github.com/manuelwedler/boxo/fetcher/helpers"
+	"github.com/manuelwedler/boxo/verifcid"
 )
 
 var logR = logging.Logger("reprovider.simple")

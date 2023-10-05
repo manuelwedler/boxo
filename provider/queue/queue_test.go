@@ -5,11 +5,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ipfs/boxo/internal/test"
 	"github.com/ipfs/go-cid"
 	"github.com/ipfs/go-datastore"
 	"github.com/ipfs/go-datastore/sync"
 	blocksutil "github.com/ipfs/go-ipfs-blocksutil"
+	"github.com/manuelwedler/boxo/internal/test"
 )
 
 var blockGenerator = blocksutil.NewBlockGenerator()

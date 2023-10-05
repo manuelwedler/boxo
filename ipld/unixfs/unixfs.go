@@ -8,10 +8,10 @@ import (
 	"fmt"
 
 	proto "github.com/gogo/protobuf/proto"
-	dag "github.com/ipfs/boxo/ipld/merkledag"
+	dag "github.com/manuelwedler/boxo/ipld/merkledag"
 
-	pb "github.com/ipfs/boxo/ipld/unixfs/pb"
 	ipld "github.com/ipfs/go-ipld-format"
+	pb "github.com/manuelwedler/boxo/ipld/unixfs/pb"
 )
 
 // A LinkResult for any parallel enumeration of links

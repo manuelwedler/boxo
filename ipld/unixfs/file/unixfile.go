@@ -4,12 +4,12 @@ import (
 	"context"
 	"errors"
 
-	ft "github.com/ipfs/boxo/ipld/unixfs"
-	uio "github.com/ipfs/boxo/ipld/unixfs/io"
+	ft "github.com/manuelwedler/boxo/ipld/unixfs"
+	uio "github.com/manuelwedler/boxo/ipld/unixfs/io"
 
-	"github.com/ipfs/boxo/files"
-	dag "github.com/ipfs/boxo/ipld/merkledag"
 	ipld "github.com/ipfs/go-ipld-format"
+	"github.com/manuelwedler/boxo/files"
+	dag "github.com/manuelwedler/boxo/ipld/merkledag"
 )
 
 // Number to file to prefetch in directories

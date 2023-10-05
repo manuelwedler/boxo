@@ -6,8 +6,8 @@ import (
 	"time"
 
 	"github.com/gogo/protobuf/proto"
-	iface "github.com/ipfs/boxo/coreiface"
-	ipns_pb "github.com/ipfs/boxo/ipns/pb"
+	iface "github.com/manuelwedler/boxo/coreiface"
+	ipns_pb "github.com/manuelwedler/boxo/ipns/pb"
 )
 
 func (tp *TestSuite) TestRouting(t *testing.T) {

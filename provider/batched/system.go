@@ -8,13 +8,13 @@ import (
 	"sync"
 	"time"
 
-	provider "github.com/ipfs/boxo/provider"
-	"github.com/ipfs/boxo/provider/queue"
-	"github.com/ipfs/boxo/provider/simple"
-	"github.com/ipfs/boxo/verifcid"
 	"github.com/ipfs/go-cid"
 	"github.com/ipfs/go-datastore"
 	logging "github.com/ipfs/go-log"
+	provider "github.com/manuelwedler/boxo/provider"
+	"github.com/manuelwedler/boxo/provider/queue"
+	"github.com/manuelwedler/boxo/provider/simple"
+	"github.com/manuelwedler/boxo/verifcid"
 	"github.com/multiformats/go-multihash"
 )
 

@@ -11,8 +11,8 @@ import (
 	"time"
 
 	"github.com/gabriel-vasile/mimetype"
-	ipath "github.com/ipfs/boxo/coreiface/path"
-	"github.com/ipfs/boxo/files"
+	ipath "github.com/manuelwedler/boxo/coreiface/path"
+	"github.com/manuelwedler/boxo/files"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 )
