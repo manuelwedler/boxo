@@ -3,13 +3,13 @@ module github.com/manuelwedler/boxo/testplan/rawa-bitswap
 go 1.19
 
 require (
-	github.com/manuelwedler/boxo v0.8.0
 	github.com/ipfs/go-cid v0.4.0
 	github.com/ipfs/go-datastore v0.6.0
 	github.com/ipfs/go-ipfs-delay v0.0.1
 	github.com/ipfs/go-ipld-format v0.4.0
 	github.com/ipfs/go-log v1.0.5
 	github.com/libp2p/go-libp2p v0.26.3
+	github.com/manuelwedler/boxo v0.8.1-0.20231005130956-5f7473f22979
 	github.com/multiformats/go-multihash v0.2.1
 	github.com/pkg/errors v0.9.1
 	github.com/testground/sdk-go v0.3.0
@@ -18,8 +18,6 @@ require (
 
 // This fixes the panic: send on closed channel issue
 replace github.com/testground/sdk-go v0.3.0 => github.com/hannahhoward/sdk-go v0.3.1-0.20220106065751-1280c9501986
-
-replace github.com/manuelwedler/boxo => github.com/manuelwedler/boxo v0.8.1-0.20231004111850-49641af630b1
 
 require (
 	github.com/alecthomas/units v0.0.0-20210927113745-59d0afb8317a // indirect
