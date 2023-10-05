@@ -4,7 +4,7 @@ import (
 	"errors"
 	"io"
 
-	internalio "github.com/ipfs/boxo/ipld/car/v2/internal/io"
+	internalio "github.com/manuelwedler/boxo/ipld/car/v2/internal/io"
 
 	"github.com/multiformats/go-varint"
 

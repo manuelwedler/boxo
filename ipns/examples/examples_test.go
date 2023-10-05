@@ -3,8 +3,8 @@ package examples_test
 import (
 	"testing"
 
-	"github.com/ipfs/boxo/ipns/examples"
 	"github.com/libp2p/go-libp2p/core/crypto"
+	"github.com/manuelwedler/boxo/ipns/examples"
 )
 
 var testPath = "/ipfs/Qme1knMqwt1hKZbc1BmQFmnm9f36nyQGwXxPGVpVJ9rMK5"

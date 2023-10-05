@@ -3,11 +3,11 @@ package bitswap
 import (
 	"time"
 
-	"github.com/ipfs/boxo/bitswap/client"
-	bsfs "github.com/ipfs/boxo/bitswap/forwardstrategy"
-	"github.com/ipfs/boxo/bitswap/server"
-	"github.com/ipfs/boxo/bitswap/tracer"
 	delay "github.com/ipfs/go-ipfs-delay"
+	"github.com/manuelwedler/boxo/bitswap/client"
+	bsfs "github.com/manuelwedler/boxo/bitswap/forwardstrategy"
+	"github.com/manuelwedler/boxo/bitswap/server"
+	"github.com/manuelwedler/boxo/bitswap/tracer"
 )
 
 type option func(*Bitswap)

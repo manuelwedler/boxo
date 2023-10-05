@@ -10,15 +10,15 @@ import (
 
 	logging "github.com/ipfs/go-log"
 
-	bs "github.com/ipfs/boxo/bitswap"
-	bsfs "github.com/ipfs/boxo/bitswap/forwardstrategy"
-	bsnet "github.com/ipfs/boxo/bitswap/network"
-	blockstore "github.com/ipfs/boxo/blockstore"
-	"github.com/ipfs/boxo/testplan/rawa-bitswap/utils"
 	"github.com/ipfs/go-cid"
 	libp2p "github.com/libp2p/go-libp2p"
 	"github.com/libp2p/go-libp2p/core/host"
 	"github.com/libp2p/go-libp2p/core/peer"
+	bs "github.com/manuelwedler/boxo/bitswap"
+	bsfs "github.com/manuelwedler/boxo/bitswap/forwardstrategy"
+	bsnet "github.com/manuelwedler/boxo/bitswap/network"
+	blockstore "github.com/manuelwedler/boxo/blockstore"
+	"github.com/manuelwedler/boxo/testplan/rawa-bitswap/utils"
 
 	noise "github.com/libp2p/go-libp2p/p2p/security/noise"
 	libp2pquic "github.com/libp2p/go-libp2p/p2p/transport/quic"

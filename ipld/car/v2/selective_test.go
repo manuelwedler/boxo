@@ -8,8 +8,6 @@ import (
 	"path"
 	"testing"
 
-	"github.com/ipfs/boxo/ipld/car/v2"
-	"github.com/ipfs/boxo/ipld/car/v2/blockstore"
 	blocks "github.com/ipfs/go-block-format"
 	"github.com/ipfs/go-cid"
 	"github.com/ipfs/go-unixfsnode"
@@ -22,6 +20,8 @@ import (
 	"github.com/ipld/go-ipld-prime/storage/bsadapter"
 	sb "github.com/ipld/go-ipld-prime/traversal/selector/builder"
 	selectorparse "github.com/ipld/go-ipld-prime/traversal/selector/parse"
+	"github.com/manuelwedler/boxo/ipld/car/v2"
+	"github.com/manuelwedler/boxo/ipld/car/v2/blockstore"
 	"github.com/stretchr/testify/require"
 
 	_ "github.com/ipld/go-ipld-prime/codec/dagcbor"

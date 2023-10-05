@@ -5,11 +5,11 @@ import (
 	"fmt"
 	"sync"
 
-	bstore "github.com/ipfs/boxo/blockstore"
 	blocks "github.com/ipfs/go-block-format"
 	cid "github.com/ipfs/go-cid"
 	ipld "github.com/ipfs/go-ipld-format"
 	"github.com/ipfs/go-metrics-interface"
+	bstore "github.com/manuelwedler/boxo/blockstore"
 )
 
 // blockstoreManager maintains a pool of workers that make requests to the blockstore.

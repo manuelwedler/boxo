@@ -7,13 +7,6 @@ import (
 	"testing"
 	"time"
 
-	bsmsg "github.com/ipfs/boxo/bitswap/message"
-	pb "github.com/ipfs/boxo/bitswap/message/pb"
-	bsnet "github.com/ipfs/boxo/bitswap/network"
-	"github.com/ipfs/boxo/bitswap/network/internal"
-	tn "github.com/ipfs/boxo/bitswap/testnet"
-	"github.com/ipfs/boxo/internal/test"
-	mockrouting "github.com/ipfs/boxo/routing/mock"
 	ds "github.com/ipfs/go-datastore"
 	blocksutil "github.com/ipfs/go-ipfs-blocksutil"
 	tnet "github.com/libp2p/go-libp2p-testing/net"
@@ -22,6 +15,13 @@ import (
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/libp2p/go-libp2p/core/protocol"
 	mocknet "github.com/libp2p/go-libp2p/p2p/net/mock"
+	bsmsg "github.com/manuelwedler/boxo/bitswap/message"
+	pb "github.com/manuelwedler/boxo/bitswap/message/pb"
+	bsnet "github.com/manuelwedler/boxo/bitswap/network"
+	"github.com/manuelwedler/boxo/bitswap/network/internal"
+	tn "github.com/manuelwedler/boxo/bitswap/testnet"
+	"github.com/manuelwedler/boxo/internal/test"
+	mockrouting "github.com/manuelwedler/boxo/routing/mock"
 	"github.com/multiformats/go-multistream"
 )
 

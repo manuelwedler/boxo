@@ -5,10 +5,10 @@ import (
 	"math/rand"
 	"time"
 
-	bsnet "github.com/ipfs/boxo/bitswap/network"
 	"github.com/ipfs/go-cid"
 	delay "github.com/ipfs/go-ipfs-delay"
 	"github.com/libp2p/go-libp2p/core/peer"
+	bsnet "github.com/manuelwedler/boxo/bitswap/network"
 )
 
 type stubDhtClient struct {

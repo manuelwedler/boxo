@@ -6,8 +6,8 @@ import (
 	"os"
 	"reflect"
 
-	carv2 "github.com/ipfs/boxo/ipld/car/v2"
-	"github.com/ipfs/boxo/ipld/car/v2/index"
+	carv2 "github.com/manuelwedler/boxo/ipld/car/v2"
+	"github.com/manuelwedler/boxo/ipld/car/v2/index"
 )
 
 // ExampleReadFrom unmarshalls an index from an indexed CARv2 file, and for each root CID prints the

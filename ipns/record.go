@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"errors"
 
-	pb "github.com/ipfs/boxo/ipns/pb"
+	pb "github.com/manuelwedler/boxo/ipns/pb"
 
 	"github.com/gogo/protobuf/proto"
 	logging "github.com/ipfs/go-log/v2"

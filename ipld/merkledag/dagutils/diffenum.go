@@ -7,7 +7,7 @@ import (
 	cid "github.com/ipfs/go-cid"
 	ipld "github.com/ipfs/go-ipld-format"
 
-	mdag "github.com/ipfs/boxo/ipld/merkledag"
+	mdag "github.com/manuelwedler/boxo/ipld/merkledag"
 )
 
 // DiffEnumerate fetches every object in the graph pointed to by 'to' that is

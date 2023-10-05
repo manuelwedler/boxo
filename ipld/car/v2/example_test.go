@@ -8,8 +8,8 @@ import (
 	"os"
 	"path/filepath"
 
-	carv2 "github.com/ipfs/boxo/ipld/car/v2"
-	"github.com/ipfs/boxo/ipld/car/v2/blockstore"
+	carv2 "github.com/manuelwedler/boxo/ipld/car/v2"
+	"github.com/manuelwedler/boxo/ipld/car/v2/blockstore"
 )
 
 func ExampleWrapV1File() {

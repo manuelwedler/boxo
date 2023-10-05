@@ -6,8 +6,8 @@ import (
 	"io"
 	"testing"
 
-	util "github.com/ipfs/boxo/util"
 	blocks "github.com/ipfs/go-block-format"
+	util "github.com/manuelwedler/boxo/util"
 )
 
 func TestRabinChunking(t *testing.T) {

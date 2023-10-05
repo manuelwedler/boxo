@@ -8,10 +8,10 @@ import (
 	"sync"
 	"time"
 
-	exchange "github.com/ipfs/boxo/exchange"
 	cid "github.com/ipfs/go-cid"
 	logging "github.com/ipfs/go-log"
 	peer "github.com/libp2p/go-libp2p/core/peer"
+	exchange "github.com/manuelwedler/boxo/exchange"
 	ks "github.com/whyrusleeping/go-keyspace"
 )
 

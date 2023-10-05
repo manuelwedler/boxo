@@ -5,12 +5,12 @@ import (
 	"sync"
 	"testing"
 
-	bsmsg "github.com/ipfs/boxo/bitswap/message"
-	bsnet "github.com/ipfs/boxo/bitswap/network"
+	bsmsg "github.com/manuelwedler/boxo/bitswap/message"
+	bsnet "github.com/manuelwedler/boxo/bitswap/network"
 
-	mockrouting "github.com/ipfs/boxo/routing/mock"
 	blocks "github.com/ipfs/go-block-format"
 	delay "github.com/ipfs/go-ipfs-delay"
+	mockrouting "github.com/manuelwedler/boxo/routing/mock"
 
 	tnet "github.com/libp2p/go-libp2p-testing/net"
 	"github.com/libp2p/go-libp2p/core/peer"

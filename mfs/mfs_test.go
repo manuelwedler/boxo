@@ -15,22 +15,22 @@ import (
 	"testing"
 	"time"
 
-	path "github.com/ipfs/boxo/path"
+	path "github.com/manuelwedler/boxo/path"
 
-	bserv "github.com/ipfs/boxo/blockservice"
-	dag "github.com/ipfs/boxo/ipld/merkledag"
-	ft "github.com/ipfs/boxo/ipld/unixfs"
-	importer "github.com/ipfs/boxo/ipld/unixfs/importer"
-	uio "github.com/ipfs/boxo/ipld/unixfs/io"
+	bserv "github.com/manuelwedler/boxo/blockservice"
+	dag "github.com/manuelwedler/boxo/ipld/merkledag"
+	ft "github.com/manuelwedler/boxo/ipld/unixfs"
+	importer "github.com/manuelwedler/boxo/ipld/unixfs/importer"
+	uio "github.com/manuelwedler/boxo/ipld/unixfs/io"
 
-	bstore "github.com/ipfs/boxo/blockstore"
-	chunker "github.com/ipfs/boxo/chunker"
-	offline "github.com/ipfs/boxo/exchange/offline"
-	u "github.com/ipfs/boxo/util"
 	cid "github.com/ipfs/go-cid"
 	ds "github.com/ipfs/go-datastore"
 	dssync "github.com/ipfs/go-datastore/sync"
 	ipld "github.com/ipfs/go-ipld-format"
+	bstore "github.com/manuelwedler/boxo/blockstore"
+	chunker "github.com/manuelwedler/boxo/chunker"
+	offline "github.com/manuelwedler/boxo/exchange/offline"
+	u "github.com/manuelwedler/boxo/util"
 )
 
 func emptyDirNode() *dag.ProtoNode {

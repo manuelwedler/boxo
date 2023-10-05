@@ -14,18 +14,18 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/ipfs/boxo/coreiface/path"
+	"github.com/manuelwedler/boxo/coreiface/path"
 
-	coreiface "github.com/ipfs/boxo/coreiface"
-	"github.com/ipfs/boxo/coreiface/options"
+	coreiface "github.com/manuelwedler/boxo/coreiface"
+	"github.com/manuelwedler/boxo/coreiface/options"
 
-	"github.com/ipfs/boxo/files"
-	mdag "github.com/ipfs/boxo/ipld/merkledag"
-	"github.com/ipfs/boxo/ipld/unixfs"
-	"github.com/ipfs/boxo/ipld/unixfs/importer/helpers"
 	"github.com/ipfs/go-cid"
 	cbor "github.com/ipfs/go-ipld-cbor"
 	ipld "github.com/ipfs/go-ipld-format"
+	"github.com/manuelwedler/boxo/files"
+	mdag "github.com/manuelwedler/boxo/ipld/merkledag"
+	"github.com/manuelwedler/boxo/ipld/unixfs"
+	"github.com/manuelwedler/boxo/ipld/unixfs/importer/helpers"
 	mh "github.com/multiformats/go-multihash"
 )
 

@@ -4,15 +4,15 @@ import (
 	"context"
 	"testing"
 
-	blockstore "github.com/ipfs/boxo/blockstore"
-	exchange "github.com/ipfs/boxo/exchange"
-	offline "github.com/ipfs/boxo/exchange/offline"
 	blocks "github.com/ipfs/go-block-format"
 	cid "github.com/ipfs/go-cid"
 	ds "github.com/ipfs/go-datastore"
 	dssync "github.com/ipfs/go-datastore/sync"
 	butil "github.com/ipfs/go-ipfs-blocksutil"
 	ipld "github.com/ipfs/go-ipld-format"
+	blockstore "github.com/manuelwedler/boxo/blockstore"
+	exchange "github.com/manuelwedler/boxo/exchange"
+	offline "github.com/manuelwedler/boxo/exchange/offline"
 )
 
 func TestWriteThroughWorks(t *testing.T) {

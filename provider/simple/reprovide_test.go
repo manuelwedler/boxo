@@ -6,12 +6,6 @@ import (
 	"testing"
 	"time"
 
-	bsrv "github.com/ipfs/boxo/blockservice"
-	blockstore "github.com/ipfs/boxo/blockstore"
-	offline "github.com/ipfs/boxo/exchange/offline"
-	bsfetcher "github.com/ipfs/boxo/fetcher/impl/blockservice"
-	"github.com/ipfs/boxo/internal/test"
-	mock "github.com/ipfs/boxo/routing/mock"
 	blocks "github.com/ipfs/go-block-format"
 	"github.com/ipfs/go-cid"
 	ds "github.com/ipfs/go-datastore"
@@ -23,9 +17,15 @@ import (
 	basicnode "github.com/ipld/go-ipld-prime/node/basic"
 	testutil "github.com/libp2p/go-libp2p-testing/net"
 	"github.com/libp2p/go-libp2p/core/peer"
+	bsrv "github.com/manuelwedler/boxo/blockservice"
+	blockstore "github.com/manuelwedler/boxo/blockstore"
+	offline "github.com/manuelwedler/boxo/exchange/offline"
+	bsfetcher "github.com/manuelwedler/boxo/fetcher/impl/blockservice"
+	"github.com/manuelwedler/boxo/internal/test"
+	mock "github.com/manuelwedler/boxo/routing/mock"
 	mh "github.com/multiformats/go-multihash"
 
-	. "github.com/ipfs/boxo/provider/simple"
+	. "github.com/manuelwedler/boxo/provider/simple"
 )
 
 func setupRouting(t *testing.T) (clA, clB mock.Client, idA, idB peer.ID) {

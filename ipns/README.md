@@ -6,7 +6,7 @@ To create a new IPNS record:
 import (
 	"time"
 
-	ipns "github.com/ipfs/boxo/ipns"
+	ipns "github.com/manuelwedler/boxo/ipns"
 	crypto "github.com/libp2p/go-libp2p/core/crypto"
 )
 

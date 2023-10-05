@@ -8,8 +8,8 @@ import (
 	"testing"
 	"time"
 
-	mdtest "github.com/ipfs/boxo/ipld/merkledag/test"
-	ft "github.com/ipfs/boxo/ipld/unixfs"
+	mdtest "github.com/manuelwedler/boxo/ipld/merkledag/test"
+	ft "github.com/manuelwedler/boxo/ipld/unixfs"
 
 	ipld "github.com/ipfs/go-ipld-format"
 )

@@ -8,8 +8,8 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/ipfs/boxo/pinning/remote/client/openapi"
 	"github.com/ipfs/go-cid"
+	"github.com/manuelwedler/boxo/pinning/remote/client/openapi"
 	"github.com/multiformats/go-multiaddr"
 	"github.com/multiformats/go-multibase"
 

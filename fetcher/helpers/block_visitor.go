@@ -1,10 +1,10 @@
 package helpers
 
 import (
-	"github.com/ipfs/boxo/fetcher"
 	"github.com/ipfs/go-cid"
 	"github.com/ipld/go-ipld-prime"
 	cidlink "github.com/ipld/go-ipld-prime/linking/cid"
+	"github.com/manuelwedler/boxo/fetcher"
 )
 
 // BlockResult specifies a node at the top of a block boundary

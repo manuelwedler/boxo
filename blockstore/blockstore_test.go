@@ -6,13 +6,13 @@ import (
 	"fmt"
 	"testing"
 
-	u "github.com/ipfs/boxo/util"
 	blocks "github.com/ipfs/go-block-format"
 	cid "github.com/ipfs/go-cid"
 	ds "github.com/ipfs/go-datastore"
 	dsq "github.com/ipfs/go-datastore/query"
 	ds_sync "github.com/ipfs/go-datastore/sync"
 	ipld "github.com/ipfs/go-ipld-format"
+	u "github.com/manuelwedler/boxo/util"
 )
 
 func TestGetWhenKeyNotPresent(t *testing.T) {
@@ -119,7 +119,7 @@ func TestPutUsesHas(t *testing.T) {
 	// Some datastores rely on the implementation detail that Put checks Has
 	// first, to avoid overriding existing objects' metadata. This test ensures
 	// that Blockstore continues to behave this way.
-	// Please ping https://github.com/ipfs/boxo/blockstore/pull/47 if this
+	// Please ping https://github.com/manuelwedler/boxo/blockstore/pull/47 if this
 	// behavior is being removed.
 	ds := &countHasDS{
 		Datastore: ds.NewMapDatastore(),

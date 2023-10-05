@@ -6,21 +6,21 @@ import (
 
 	"math/big"
 
-	"github.com/ipfs/boxo/bitswap/client"
-	"github.com/ipfs/boxo/bitswap/internal/defaults"
-	"github.com/ipfs/boxo/bitswap/message"
-	"github.com/ipfs/boxo/bitswap/network"
-	bsrm "github.com/ipfs/boxo/bitswap/relaymanager"
-	"github.com/ipfs/boxo/bitswap/server"
-	"github.com/ipfs/boxo/bitswap/tracer"
 	"github.com/ipfs/go-metrics-interface"
+	"github.com/manuelwedler/boxo/bitswap/client"
+	"github.com/manuelwedler/boxo/bitswap/internal/defaults"
+	"github.com/manuelwedler/boxo/bitswap/message"
+	"github.com/manuelwedler/boxo/bitswap/network"
+	bsrm "github.com/manuelwedler/boxo/bitswap/relaymanager"
+	"github.com/manuelwedler/boxo/bitswap/server"
+	"github.com/manuelwedler/boxo/bitswap/tracer"
 
-	blockstore "github.com/ipfs/boxo/blockstore"
-	exchange "github.com/ipfs/boxo/exchange"
 	blocks "github.com/ipfs/go-block-format"
 	"github.com/ipfs/go-cid"
 	logging "github.com/ipfs/go-log"
 	"github.com/libp2p/go-libp2p/core/peer"
+	blockstore "github.com/manuelwedler/boxo/blockstore"
+	exchange "github.com/manuelwedler/boxo/exchange"
 
 	"go.uber.org/multierr"
 )

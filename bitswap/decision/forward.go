@@ -1,6 +1,6 @@
 package decision
 
-import "github.com/ipfs/boxo/bitswap/server"
+import "github.com/manuelwedler/boxo/bitswap/server"
 
 type (
 	// Deprecated: use server.Receipt instead

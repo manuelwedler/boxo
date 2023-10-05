@@ -6,11 +6,11 @@ import (
 	"testing"
 	"time"
 
-	fs "github.com/ipfs/boxo/bitswap/forwardstrategy"
-	"github.com/ipfs/boxo/bitswap/internal/testutil"
-	"github.com/ipfs/boxo/internal/test"
 	cid "github.com/ipfs/go-cid"
 	peer "github.com/libp2p/go-libp2p/core/peer"
+	fs "github.com/manuelwedler/boxo/bitswap/forwardstrategy"
+	"github.com/manuelwedler/boxo/bitswap/internal/testutil"
+	"github.com/manuelwedler/boxo/internal/test"
 )
 
 type gauge struct {

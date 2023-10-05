@@ -5,9 +5,6 @@ import (
 	"context"
 	"testing"
 
-	car "github.com/ipfs/boxo/ipld/car"
-	"github.com/ipfs/boxo/ipld/merkledag"
-	dstest "github.com/ipfs/boxo/ipld/merkledag/test"
 	blocks "github.com/ipfs/go-block-format"
 	cid "github.com/ipfs/go-cid"
 	format "github.com/ipfs/go-ipld-format"
@@ -15,6 +12,9 @@ import (
 	"github.com/ipld/go-ipld-prime/traversal/selector"
 	"github.com/ipld/go-ipld-prime/traversal/selector/builder"
 	selectorparse "github.com/ipld/go-ipld-prime/traversal/selector/parse"
+	car "github.com/manuelwedler/boxo/ipld/car"
+	"github.com/manuelwedler/boxo/ipld/merkledag"
+	dstest "github.com/manuelwedler/boxo/ipld/merkledag/test"
 	"github.com/stretchr/testify/require"
 )
 

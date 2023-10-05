@@ -3,11 +3,11 @@ package car
 import (
 	"math"
 
-	"github.com/ipfs/boxo/ipld/car/v2/index"
 	"github.com/ipld/go-ipld-prime/traversal"
+	"github.com/manuelwedler/boxo/ipld/car/v2/index"
 	"github.com/multiformats/go-multicodec"
 
-	"github.com/ipfs/boxo/ipld/car/v2/internal/carv1"
+	"github.com/manuelwedler/boxo/ipld/car/v2/internal/carv1"
 )
 
 // DefaultMaxIndexCidSize specifies the maximum size in byptes accepted as a section CID by CARv2 index.

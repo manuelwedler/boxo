@@ -6,11 +6,11 @@ import (
 	"testing"
 	"time"
 
-	pb "github.com/ipfs/boxo/ipns/pb"
+	pb "github.com/manuelwedler/boxo/ipns/pb"
 
 	"github.com/gogo/protobuf/proto"
-	u "github.com/ipfs/boxo/util"
 	ci "github.com/libp2p/go-libp2p/core/crypto"
+	u "github.com/manuelwedler/boxo/util"
 )
 
 func shuffle(a []*pb.IpnsEntry) {

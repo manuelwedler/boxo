@@ -5,9 +5,9 @@ import (
 	"testing"
 	"time"
 
-	u "github.com/ipfs/boxo/util"
 	ci "github.com/libp2p/go-libp2p/core/crypto"
 	"github.com/libp2p/go-libp2p/core/peer"
+	u "github.com/manuelwedler/boxo/util"
 )
 
 func TestEmbedPublicKey(t *testing.T) {

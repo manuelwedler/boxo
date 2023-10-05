@@ -11,15 +11,15 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 
-	blockstore "github.com/ipfs/boxo/blockstore"
-	exchange "github.com/ipfs/boxo/exchange"
-	"github.com/ipfs/boxo/verifcid"
 	blocks "github.com/ipfs/go-block-format"
 	cid "github.com/ipfs/go-cid"
 	ipld "github.com/ipfs/go-ipld-format"
 	logging "github.com/ipfs/go-log/v2"
+	blockstore "github.com/manuelwedler/boxo/blockstore"
+	exchange "github.com/manuelwedler/boxo/exchange"
+	"github.com/manuelwedler/boxo/verifcid"
 
-	"github.com/ipfs/boxo/blockservice/internal"
+	"github.com/manuelwedler/boxo/blockservice/internal"
 )
 
 var logger = logging.Logger("blockservice")

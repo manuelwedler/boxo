@@ -5,12 +5,6 @@ import (
 	"testing"
 	"time"
 
-	opts "github.com/ipfs/boxo/coreiface/options/namesys"
-	"github.com/ipfs/boxo/ipns"
-	ipns_pb "github.com/ipfs/boxo/ipns/pb"
-	"github.com/ipfs/boxo/path"
-	mockrouting "github.com/ipfs/boxo/routing/mock"
-	"github.com/ipfs/boxo/routing/offline"
 	ds "github.com/ipfs/go-datastore"
 	dssync "github.com/ipfs/go-datastore/sync"
 	record "github.com/libp2p/go-libp2p-record"
@@ -21,6 +15,12 @@ import (
 	"github.com/libp2p/go-libp2p/core/routing"
 	"github.com/libp2p/go-libp2p/core/test"
 	"github.com/libp2p/go-libp2p/p2p/host/peerstore/pstoremem"
+	opts "github.com/manuelwedler/boxo/coreiface/options/namesys"
+	"github.com/manuelwedler/boxo/ipns"
+	ipns_pb "github.com/manuelwedler/boxo/ipns/pb"
+	"github.com/manuelwedler/boxo/path"
+	mockrouting "github.com/manuelwedler/boxo/routing/mock"
+	"github.com/manuelwedler/boxo/routing/offline"
 )
 
 func TestResolverValidation(t *testing.T) {

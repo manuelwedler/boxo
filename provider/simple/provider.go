@@ -7,10 +7,10 @@ import (
 	"context"
 	"time"
 
-	q "github.com/ipfs/boxo/provider/queue"
 	"github.com/ipfs/go-cid"
 	logging "github.com/ipfs/go-log"
 	"github.com/libp2p/go-libp2p/core/routing"
+	q "github.com/manuelwedler/boxo/provider/queue"
 )
 
 var logP = logging.Logger("provider.simple")

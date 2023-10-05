@@ -11,9 +11,9 @@ import (
 
 	"github.com/cespare/xxhash"
 	"github.com/gogo/protobuf/proto"
-	ipath "github.com/ipfs/boxo/coreiface/path"
-	ipns_pb "github.com/ipfs/boxo/ipns/pb"
 	"github.com/ipfs/go-cid"
+	ipath "github.com/manuelwedler/boxo/coreiface/path"
+	ipns_pb "github.com/manuelwedler/boxo/ipns/pb"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"

@@ -5,8 +5,8 @@ import (
 	"strings"
 	"time"
 
-	opts "github.com/ipfs/boxo/coreiface/options/namesys"
-	path "github.com/ipfs/boxo/path"
+	opts "github.com/manuelwedler/boxo/coreiface/options/namesys"
+	path "github.com/manuelwedler/boxo/path"
 )
 
 type onceResult struct {

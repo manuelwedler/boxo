@@ -30,13 +30,13 @@ import (
 
 	"golang.org/x/sync/errgroup"
 
-	format "github.com/ipfs/boxo/ipld/unixfs"
-	"github.com/ipfs/boxo/ipld/unixfs/internal"
+	format "github.com/manuelwedler/boxo/ipld/unixfs"
+	"github.com/manuelwedler/boxo/ipld/unixfs/internal"
 
-	dag "github.com/ipfs/boxo/ipld/merkledag"
 	bitfield "github.com/ipfs/go-bitfield"
 	cid "github.com/ipfs/go-cid"
 	ipld "github.com/ipfs/go-ipld-format"
+	dag "github.com/manuelwedler/boxo/ipld/merkledag"
 )
 
 const (
@@ -472,7 +472,7 @@ func (ds *Shard) walkChildren(processLinkValues func(formattedLink *ipld.Link) e
 	return res, nil
 }
 
-// parallelShardWalk is quite similar to the DAG walking algorithm from https://github.com/ipfs/boxo/ipld/merkledag/blob/594e515f162e764183243b72c2ba84f743424c8c/merkledag.go#L464
+// parallelShardWalk is quite similar to the DAG walking algorithm from https://github.com/manuelwedler/boxo/ipld/merkledag/blob/594e515f162e764183243b72c2ba84f743424c8c/merkledag.go#L464
 // However, there are a few notable differences:
 //  1. Some children are actualized Shard structs and some are in the blockstore, this will leverage walking over the in memory Shards as well as the stored blocks
 //  2. Instead of just passing each child into the worker pool by itself we group them so that we can leverage optimizations from GetMany.

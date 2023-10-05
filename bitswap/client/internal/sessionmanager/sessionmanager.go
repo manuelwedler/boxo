@@ -11,15 +11,15 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 
-	"github.com/ipfs/boxo/bitswap/client/internal"
-	bsbpm "github.com/ipfs/boxo/bitswap/client/internal/blockpresencemanager"
-	notifications "github.com/ipfs/boxo/bitswap/client/internal/notifications"
-	bssession "github.com/ipfs/boxo/bitswap/client/internal/session"
-	bssim "github.com/ipfs/boxo/bitswap/client/internal/sessioninterestmanager"
-	bsrm "github.com/ipfs/boxo/bitswap/relaymanager"
-	exchange "github.com/ipfs/boxo/exchange"
 	logging "github.com/ipfs/go-log"
 	peer "github.com/libp2p/go-libp2p/core/peer"
+	"github.com/manuelwedler/boxo/bitswap/client/internal"
+	bsbpm "github.com/manuelwedler/boxo/bitswap/client/internal/blockpresencemanager"
+	notifications "github.com/manuelwedler/boxo/bitswap/client/internal/notifications"
+	bssession "github.com/manuelwedler/boxo/bitswap/client/internal/session"
+	bssim "github.com/manuelwedler/boxo/bitswap/client/internal/sessioninterestmanager"
+	bsrm "github.com/manuelwedler/boxo/bitswap/relaymanager"
+	exchange "github.com/manuelwedler/boxo/exchange"
 )
 
 var log = logging.Logger("bs:sessmgr")

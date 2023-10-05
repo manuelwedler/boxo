@@ -4,10 +4,10 @@ import (
 	"context"
 	"sync"
 
-	bsmsg "github.com/ipfs/boxo/bitswap/message"
-	bsnet "github.com/ipfs/boxo/bitswap/network"
 	"github.com/ipfs/go-cid"
 	"github.com/libp2p/go-libp2p/core/peer"
+	bsmsg "github.com/manuelwedler/boxo/bitswap/message"
+	bsnet "github.com/manuelwedler/boxo/bitswap/network"
 )
 
 type MessageRecorder struct {

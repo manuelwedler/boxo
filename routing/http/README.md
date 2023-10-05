@@ -9,7 +9,7 @@ This package provides delegated routing implementation in Go:
 
 ## Documentation
 
-- Go docs: https://pkg.go.dev/github.com/ipfs/boxo/routing/http/
+- Go docs: https://pkg.go.dev/github.com/manuelwedler/boxo/routing/http/
 
 ## Lead Maintainer
 

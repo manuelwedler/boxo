@@ -7,13 +7,13 @@ import (
 	"math"
 	"testing"
 
-	"github.com/ipfs/boxo/ipld/unixfs/internal"
+	"github.com/manuelwedler/boxo/ipld/unixfs/internal"
 
-	mdtest "github.com/ipfs/boxo/ipld/merkledag/test"
+	mdtest "github.com/manuelwedler/boxo/ipld/merkledag/test"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/ipfs/boxo/ipld/unixfs"
-	"github.com/ipfs/boxo/ipld/unixfs/hamt"
+	"github.com/manuelwedler/boxo/ipld/unixfs"
+	"github.com/manuelwedler/boxo/ipld/unixfs/hamt"
 
 	ipld "github.com/ipfs/go-ipld-format"
 )

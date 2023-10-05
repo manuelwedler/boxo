@@ -36,7 +36,7 @@ jobs:
           name: ${{ github.job }}
       - name: Replace boxo in Kubo go.mod
         run: |
-          go mod edit -replace=github.com/ipfs/boxo=../boxo
+          go mod edit -replace=github.com/manuelwedler/boxo=../boxo
           go mod tidy
           cat go.mod
         working-directory: kubo

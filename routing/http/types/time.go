@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"time"
 
-	"github.com/ipfs/boxo/routing/http/internal/drjson"
+	"github.com/manuelwedler/boxo/routing/http/internal/drjson"
 )
 
 type Time struct{ time.Time }

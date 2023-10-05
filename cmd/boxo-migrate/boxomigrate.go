@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	migrate "github.com/ipfs/boxo/cmd/boxo-migrate/internal"
+	migrate "github.com/manuelwedler/boxo/cmd/boxo-migrate/internal"
 	"github.com/urfave/cli/v2"
 )
 
@@ -102,7 +102,7 @@ check by adding the --force flag.`)
 					}
 
 					if !dryrun {
-						err := migrator.GoGet("github.com/ipfs/boxo@v0.8.0")
+						err := migrator.GoGet("github.com/manuelwedler/boxo@v0.8.0")
 						if err != nil {
 							return err
 						}

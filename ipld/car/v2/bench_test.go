@@ -8,11 +8,11 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/ipfs/boxo/ipld/car/v2/blockstore"
-	"github.com/ipfs/boxo/ipld/merkledag"
 	"github.com/ipfs/go-cid"
+	"github.com/manuelwedler/boxo/ipld/car/v2/blockstore"
+	"github.com/manuelwedler/boxo/ipld/merkledag"
 
-	carv2 "github.com/ipfs/boxo/ipld/car/v2"
+	carv2 "github.com/manuelwedler/boxo/ipld/car/v2"
 )
 
 // BenchmarkReadBlocks instantiates a BlockReader, and iterates over all blocks.

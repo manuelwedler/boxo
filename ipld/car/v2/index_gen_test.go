@@ -7,11 +7,11 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	carv2 "github.com/ipfs/boxo/ipld/car/v2"
-	"github.com/ipfs/boxo/ipld/car/v2/index"
-	"github.com/ipfs/boxo/ipld/car/v2/internal/carv1"
-	internalio "github.com/ipfs/boxo/ipld/car/v2/internal/io"
 	"github.com/ipfs/go-cid"
+	carv2 "github.com/manuelwedler/boxo/ipld/car/v2"
+	"github.com/manuelwedler/boxo/ipld/car/v2/index"
+	"github.com/manuelwedler/boxo/ipld/car/v2/internal/carv1"
+	internalio "github.com/manuelwedler/boxo/ipld/car/v2/internal/io"
 	"github.com/multiformats/go-multicodec"
 	"github.com/multiformats/go-multihash"
 	"github.com/multiformats/go-varint"

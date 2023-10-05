@@ -6,9 +6,9 @@ import (
 	"errors"
 	"fmt"
 
-	fs "github.com/ipfs/boxo/bitswap/forwardstrategy"
 	cid "github.com/ipfs/go-cid"
 	peer "github.com/libp2p/go-libp2p/core/peer"
+	fs "github.com/manuelwedler/boxo/bitswap/forwardstrategy"
 )
 
 // Gauge can be used to keep track of a metric that increases and decreases

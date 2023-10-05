@@ -3,7 +3,7 @@ package common
 import (
 	"net/http"
 
-	"github.com/ipfs/boxo/gateway"
+	"github.com/manuelwedler/boxo/gateway"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )

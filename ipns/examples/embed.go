@@ -3,10 +3,10 @@ package examples
 import (
 	"time"
 
-	pb "github.com/ipfs/boxo/ipns/pb"
+	pb "github.com/manuelwedler/boxo/ipns/pb"
 
-	"github.com/ipfs/boxo/ipns"
 	"github.com/libp2p/go-libp2p/core/crypto"
+	"github.com/manuelwedler/boxo/ipns"
 )
 
 // CreateEntryWithEmbed shows how you can create an IPNS entry

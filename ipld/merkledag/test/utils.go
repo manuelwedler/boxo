@@ -1,14 +1,14 @@
 package mdutils
 
 import (
-	dag "github.com/ipfs/boxo/ipld/merkledag"
+	dag "github.com/manuelwedler/boxo/ipld/merkledag"
 
-	bsrv "github.com/ipfs/boxo/blockservice"
-	blockstore "github.com/ipfs/boxo/blockstore"
-	offline "github.com/ipfs/boxo/exchange/offline"
 	ds "github.com/ipfs/go-datastore"
 	dssync "github.com/ipfs/go-datastore/sync"
 	ipld "github.com/ipfs/go-ipld-format"
+	bsrv "github.com/manuelwedler/boxo/blockservice"
+	blockstore "github.com/manuelwedler/boxo/blockstore"
+	offline "github.com/manuelwedler/boxo/exchange/offline"
 )
 
 // Mock returns a new thread-safe, mock DAGService.

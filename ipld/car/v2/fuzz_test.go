@@ -10,8 +10,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	car "github.com/ipfs/boxo/ipld/car/v2"
-	"github.com/ipfs/boxo/ipld/car/v2/internal/carv1"
+	car "github.com/manuelwedler/boxo/ipld/car/v2"
+	"github.com/manuelwedler/boxo/ipld/car/v2/internal/carv1"
 )
 
 // v1FixtureStr is a clean carv1 single-block, single-root CAR

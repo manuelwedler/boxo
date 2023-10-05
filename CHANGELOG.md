@@ -35,7 +35,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - github.com/ipfs/go-unixfs => ./ipld/unixfs
   - github.com/ipfs/go-merkledag => ./ipld/merkledag
   - github.com/ipld/go-car => ./ipld/car
-- Added a migration tool to aid in migrating from the migrated repositories to Boxo, see the documentation here: https://github.com/ipfs/boxo/blob/main/README.md#migrating-to-boxo
+- Added a migration tool to aid in migrating from the migrated repositories to Boxo, see the documentation here: https://github.com/manuelwedler/boxo/blob/main/README.md#migrating-to-boxo
   - Added a check to ensure the migration tool is only run in a Git repository (with an optional override flag)
 - Added tracing and metrics to the refactored gateway for its IPFS backend
 

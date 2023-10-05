@@ -5,7 +5,7 @@ import (
 	"io"
 	"testing"
 
-	util "github.com/ipfs/boxo/util"
+	util "github.com/manuelwedler/boxo/util"
 )
 
 func testBuzhashChunking(t *testing.T, buf []byte) (chunkCount int) {

@@ -5,7 +5,7 @@ import (
 	"io"
 	"testing"
 
-	u "github.com/ipfs/boxo/util"
+	u "github.com/manuelwedler/boxo/util"
 )
 
 func randBuf(t *testing.T, size int) []byte {

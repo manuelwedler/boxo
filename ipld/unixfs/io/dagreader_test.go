@@ -6,12 +6,12 @@ import (
 	"strings"
 	"testing"
 
-	mdag "github.com/ipfs/boxo/ipld/merkledag"
-	"github.com/ipfs/boxo/ipld/unixfs"
+	mdag "github.com/manuelwedler/boxo/ipld/merkledag"
+	"github.com/manuelwedler/boxo/ipld/unixfs"
 
 	context "context"
 
-	testu "github.com/ipfs/boxo/ipld/unixfs/test"
+	testu "github.com/manuelwedler/boxo/ipld/unixfs/test"
 )
 
 func TestBasicRead(t *testing.T) {

@@ -3,10 +3,10 @@ package bitswap
 import (
 	"context"
 
-	bsnet "github.com/ipfs/boxo/bitswap/network"
+	bsnet "github.com/manuelwedler/boxo/bitswap/network"
 
-	mockrouting "github.com/ipfs/boxo/routing/mock"
 	ds "github.com/ipfs/go-datastore"
+	mockrouting "github.com/manuelwedler/boxo/routing/mock"
 
 	tnet "github.com/libp2p/go-libp2p-testing/net"
 	"github.com/libp2p/go-libp2p/core/peer"

@@ -4,10 +4,10 @@ import (
 	"context"
 	"testing"
 
-	dag "github.com/ipfs/boxo/ipld/merkledag"
-	mdtest "github.com/ipfs/boxo/ipld/merkledag/test"
 	cid "github.com/ipfs/go-cid"
 	ipld "github.com/ipfs/go-ipld-format"
+	dag "github.com/manuelwedler/boxo/ipld/merkledag"
+	mdtest "github.com/manuelwedler/boxo/ipld/merkledag/test"
 )
 
 func TestMergeDiffs(t *testing.T) {

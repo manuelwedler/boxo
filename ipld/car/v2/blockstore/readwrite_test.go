@@ -13,20 +13,20 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ipfs/boxo/ipld/merkledag"
 	blocks "github.com/ipfs/go-block-format"
 	"github.com/ipfs/go-cid"
 	cbor "github.com/ipfs/go-ipld-cbor"
 	format "github.com/ipfs/go-ipld-format"
+	"github.com/manuelwedler/boxo/ipld/merkledag"
 	"github.com/multiformats/go-multicodec"
 	"github.com/multiformats/go-multihash"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	carv2 "github.com/ipfs/boxo/ipld/car/v2"
-	"github.com/ipfs/boxo/ipld/car/v2/blockstore"
-	"github.com/ipfs/boxo/ipld/car/v2/index"
-	"github.com/ipfs/boxo/ipld/car/v2/internal/carv1"
+	carv2 "github.com/manuelwedler/boxo/ipld/car/v2"
+	"github.com/manuelwedler/boxo/ipld/car/v2/blockstore"
+	"github.com/manuelwedler/boxo/ipld/car/v2/index"
+	"github.com/manuelwedler/boxo/ipld/car/v2/internal/carv1"
 )
 
 var (

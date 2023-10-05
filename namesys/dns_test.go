@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"testing"
 
-	opts "github.com/ipfs/boxo/coreiface/options/namesys"
+	opts "github.com/manuelwedler/boxo/coreiface/options/namesys"
 )
 
 type mockDNS struct {

@@ -4,12 +4,12 @@ import (
 	"context"
 	"testing"
 
-	blockstore "github.com/ipfs/boxo/blockstore"
-	u "github.com/ipfs/boxo/util"
 	cid "github.com/ipfs/go-cid"
 	ds "github.com/ipfs/go-datastore"
 	ds_sync "github.com/ipfs/go-datastore/sync"
 	blocksutil "github.com/ipfs/go-ipfs-blocksutil"
+	blockstore "github.com/manuelwedler/boxo/blockstore"
+	u "github.com/manuelwedler/boxo/util"
 )
 
 func TestBlockReturnsErr(t *testing.T) {

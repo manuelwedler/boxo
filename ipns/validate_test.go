@@ -10,14 +10,14 @@ import (
 	"time"
 
 	"github.com/gogo/protobuf/proto"
-	pb "github.com/ipfs/boxo/ipns/pb"
-	u "github.com/ipfs/boxo/util"
 	ipldcodec "github.com/ipld/go-ipld-prime/multicodec"
 	basicnode "github.com/ipld/go-ipld-prime/node/basic"
 	"github.com/libp2p/go-libp2p/core/crypto"
 	"github.com/libp2p/go-libp2p/core/peer"
 	pstore "github.com/libp2p/go-libp2p/core/peerstore"
 	"github.com/libp2p/go-libp2p/p2p/host/peerstore/pstoremem"
+	pb "github.com/manuelwedler/boxo/ipns/pb"
+	u "github.com/manuelwedler/boxo/util"
 	"github.com/multiformats/go-multicodec"
 )
 

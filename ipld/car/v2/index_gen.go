@@ -5,10 +5,10 @@ import (
 	"io"
 	"os"
 
-	"github.com/ipfs/boxo/ipld/car/v2/index"
-	"github.com/ipfs/boxo/ipld/car/v2/internal/carv1"
-	internalio "github.com/ipfs/boxo/ipld/car/v2/internal/io"
 	"github.com/ipfs/go-cid"
+	"github.com/manuelwedler/boxo/ipld/car/v2/index"
+	"github.com/manuelwedler/boxo/ipld/car/v2/internal/carv1"
+	internalio "github.com/manuelwedler/boxo/ipld/car/v2/internal/io"
 	"github.com/multiformats/go-multihash"
 	"github.com/multiformats/go-varint"
 )

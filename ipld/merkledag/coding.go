@@ -5,7 +5,6 @@ import (
 	"sort"
 	"strings"
 
-	pb "github.com/ipfs/boxo/ipld/merkledag/pb"
 	blocks "github.com/ipfs/go-block-format"
 	cid "github.com/ipfs/go-cid"
 	format "github.com/ipfs/go-ipld-format"
@@ -13,6 +12,7 @@ import (
 	ipld "github.com/ipld/go-ipld-prime"
 	"github.com/ipld/go-ipld-prime/fluent/qp"
 	cidlink "github.com/ipld/go-ipld-prime/linking/cid"
+	pb "github.com/manuelwedler/boxo/ipld/merkledag/pb"
 )
 
 // Make sure the user doesn't upgrade this file.

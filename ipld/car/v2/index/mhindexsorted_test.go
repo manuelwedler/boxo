@@ -8,8 +8,8 @@ import (
 
 	"github.com/multiformats/go-multicodec"
 
-	"github.com/ipfs/boxo/ipld/car/v2/index"
 	"github.com/ipfs/go-cid"
+	"github.com/manuelwedler/boxo/ipld/car/v2/index"
 	"github.com/multiformats/go-multihash"
 	"github.com/stretchr/testify/require"
 )
