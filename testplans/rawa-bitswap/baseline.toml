@@ -1,0 +1,19 @@
+[global]
+plan    = "rawa-bitswap"
+case    = "rawa-test"
+builder = "docker:go"
+runner = "local:docker"
+
+[global.build_config]
+# Use Baseline Bitswap module
+modfile = "baseline.go.mod"
+
+[[groups]]
+id = "nodes"
+instances = { count = 10 }
+
+  [groups.run]
+  [groups.run.test_params]
+  run_count = "10"
+  conn_per_node = "2"
+  first_spy = "true"
