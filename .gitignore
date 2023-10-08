@@ -1,2 +1,3 @@
 cmd/boxo-migrate/boxo-migrate
 testplans/rawa-bitswap/scripts/results
+testplans/rawa-bitswap/scripts/venv
