@@ -55,7 +55,10 @@ func runRaWaTest(runenv *runtime.RunEnv, initCtx *run.InitContext) error {
 	connPerNode := runenv.IntParam("conn_per_node")
 	allMode := runenv.BooleanParam("all_mode")
 	firstSpyMode := runenv.BooleanParam("first_spy")
-	// todo / validate that only one adversary type is enabled (when adding more complex adversaries)
+	forwardExploiterMode := runenv.BooleanParam("forward_exploiter")
+	if firstSpyMode && forwardExploiterMode {
+		return fmt.Errorf("cannot run two different adversaries at the same time")
+	}
 
 	proxyTransitionProb := runenv.FloatParam("proxy_transition_prob")
 	unforwardedSearchTime := time.Duration(runenv.IntParam("unforwarded_search_time")) * time.Second
@@ -186,7 +189,13 @@ func runRaWaTest(runenv *runtime.RunEnv, initCtx *run.InitContext) error {
 		spy = true
 		provider = false
 		requestor = false
-		recordMessage("running spy")
+		recordMessage("running first-spy estimator")
+	}
+	if forwardExploiterMode && initCtx.GlobalSeq == 3 {
+		spy = true
+		provider = false
+		requestor = false
+		recordMessage("running want-forward exploiter")
 	}
 
 	// Use the same blockstore on all runs, just make sure to clear later
@@ -208,7 +217,7 @@ func runRaWaTest(runenv *runtime.RunEnv, initCtx *run.InitContext) error {
 	rand.Seed(rSeed)
 
 	spyCount := 0
-	if firstSpyMode {
+	if firstSpyMode || forwardExploiterMode {
 		spyCount = 1
 	}
 	// number of seeds and leeds is always the same
@@ -269,11 +278,18 @@ func runRaWaTest(runenv *runtime.RunEnv, initCtx *run.InitContext) error {
 		providerTopic := sync.NewTopic("provider-info", &ProviderInfo{})
 		interestTopic := sync.NewTopic("interest-info-"+runId, &InterestInfo{})
 
+		network := bsnet.NewFromIpfsHost(h, dht)
+
 		messageListeners := make([]bsnet.Receiver, 0, 1)
 		var recorder *utils.MessageRecorder
-		if spy {
+		if spy && firstSpyMode {
 			recorder = utils.NewMessageRecorder(allSpys)
 			messageListeners = append(messageListeners, recorder)
+		}
+		var exploiter *utils.WantForwardExploiter
+		if spy && forwardExploiterMode {
+			exploiter = utils.NewWantForwardExploiter(*host.InfoFromHost(h), network)
+			messageListeners = append(messageListeners, exploiter)
 		}
 
 		// Add values for configurable parameters
@@ -287,7 +303,7 @@ func runRaWaTest(runenv *runtime.RunEnv, initCtx *run.InitContext) error {
 		}
 
 		// Create a new bitswap node from the blockstore
-		bsnode, err = utils.CreateBitswapNode(runCtx, h, bstore, dht, messageListeners, bsOptions...)
+		bsnode, err = utils.CreateBitswapNode(runCtx, network, h, bstore, messageListeners, bsOptions...)
 		if err != nil {
 			return fmt.Errorf("error during bs node creation: %s", err)
 		}
@@ -394,7 +410,7 @@ func runRaWaTest(runenv *runtime.RunEnv, initCtx *run.InitContext) error {
 		var err error
 		var dialed []peer.AddrInfo
 		if spy {
-			// todo / make sure to only connect to all peers with first-spy estimator
+			// todo / make sure to not connect to all peers with different adversary
 			// connects to all peers
 			dialed, err = utils.SpyDialPeers(runCtx, h, addrInfos, allSpys)
 		} else {
@@ -407,6 +423,20 @@ func runRaWaTest(runenv *runtime.RunEnv, initCtx *run.InitContext) error {
 
 		// Wait for all nodes to be connected
 		err = signalAndWaitForAll("connect-complete-" + runId)
+		if err != nil {
+			return err
+		}
+
+		if isFirstRun && spy && forwardExploiterMode {
+			// Get all blocks to satisfy requestors
+			for _, i := range allProviderInfos {
+				bsnode.FetchGraph(runCtx, i.Cid)
+			}
+			recordMessage("Downloaded all blocks")
+		}
+
+		// Wait for all nodes to be connected
+		err = signalAndWaitForAll("ready-to-download-" + runId)
 		if err != nil {
 			return err
 		}
@@ -435,12 +465,21 @@ func runRaWaTest(runenv *runtime.RunEnv, initCtx *run.InitContext) error {
 
 		// Calculate privacy metric
 		if spy {
-			classification := classifyByFirstSpyEstimator(recorder, correctInterests, r.Int63())
+			var classification map[peer.ID]cid.Cid
+			var spyTypeStr string
+			if firstSpyMode {
+				classification = classifyByFirstSpyEstimator(recorder, correctInterests, r.Int63())
+				spyTypeStr = "first-spy-estimator"
+			} else if forwardExploiterMode {
+				classification = classifyByWantForwardExploiter(exploiter, correctInterests, r.Int63())
+				spyTypeStr = "want-forward-exploiter"
+			}
 			precision, recall := calculatePrecisionRecall(classification, correctInterests)
-			recordMessage("First spy estimator precision: %g", precision)
-			recordMessage("First spy estimator recall: %g", recall)
-			runenv.R().RecordPoint("first-spy-estimator-precision", precision)
-			runenv.R().RecordPoint("first-spy-estimator-recall", recall)
+
+			recordMessage(spyTypeStr+" precision: %g", precision)
+			recordMessage(spyTypeStr+" recall: %g", recall)
+			runenv.R().RecordPoint(spyTypeStr+"-precision", precision)
+			runenv.R().RecordPoint(spyTypeStr+"-recall", recall)
 		}
 
 		stats, err := bsnode.Bitswap.Stat()
@@ -478,11 +517,13 @@ func runRaWaTest(runenv *runtime.RunEnv, initCtx *run.InitContext) error {
 			}
 		}
 
-		// Free up memory by clearing the leech blockstore at the end of each run.
-		// Note that explicitly cleaning up the blockstore from the
-		// previous run allows it to be GCed.
-		if err := utils.ClearBlockstore(runCtx, bstore, ownProviderInfo.Cid); err != nil {
-			return fmt.Errorf("error clearing blockstore: %w", err)
+		if !(spy && forwardExploiterMode) {
+			// Free up memory by clearing the leech blockstore at the end of each run.
+			// Note that explicitly cleaning up the blockstore from the
+			// previous run allows it to be GCed.
+			if err := utils.ClearBlockstore(runCtx, bstore, ownProviderInfo.Cid); err != nil {
+				return fmt.Errorf("error clearing blockstore: %w", err)
+			}
 		}
 
 		// Clear peerstores
@@ -515,6 +556,33 @@ func classifyByFirstSpyEstimator(recorder *utils.MessageRecorder, correctInteres
 
 	observedCids := make([]cid.Cid, 0, len(recorder.ObservedCids))
 	for c := range recorder.ObservedCids {
+		observedCids = append(observedCids, c)
+	}
+
+	// Selected a random cid for any peer not classified yet
+	for p := range correctInterests {
+		if _, ok := classification[p]; ok {
+			continue
+		}
+		rand.Seed(time.Now().Unix() + randSeed)
+		perm := rand.Perm(len(observedCids))
+		selected := observedCids[perm[0]]
+		classification[p] = selected
+	}
+
+	return classification
+}
+
+func classifyByWantForwardExploiter(exploiter *utils.WantForwardExploiter, correctInterests map[peer.ID]cid.Cid, randSeed int64) map[peer.ID]cid.Cid {
+	// correctInterests is only used to determine which honest peers exist
+
+	classification := make(map[peer.ID]cid.Cid, len(correctInterests))
+	for p, c := range exploiter.WantBlockFromPeer {
+		classification[p] = c
+	}
+
+	observedCids := make([]cid.Cid, 0, len(exploiter.ObservedCids))
+	for c := range exploiter.ObservedCids {
 		observedCids = append(observedCids, c)
 	}
 
