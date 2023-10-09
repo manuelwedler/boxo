@@ -29,7 +29,7 @@ run() {
     for n in 0 2 4
     do
         # proxy_transition_prob
-        for p in `LANG=en_US seq 0.05 0.05 0.3`
+        for p in 0.05 0.1 0.2 0.3
         do 
             echo "running forward_graph_degree=$n proxy_transition_prob=$p"
             id=`run_testground $n $p | tail -n 2 | awk -F 'run with ID: ' '{ print $2 }'`
