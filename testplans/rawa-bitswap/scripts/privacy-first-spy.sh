@@ -15,13 +15,12 @@ run_testground (){
         --wait \
         -tp run_count=100 \
         -tp conn_per_node=4 \
-        -tp unforwarded_search_time=2 \
+        -tp unforwarded_search_time=4 \
         -tp proxy_transition_prob=$PROXY_PROB \
         -tp forward_graph_degree=$FORWARD_DEGREE \
         -tp closest_peerid_forward=false \
         -tp first_spy=true
 }
-# todo unforwarded search timer from evaluation
 
 run() {
     echo "running $TEST_NAME evaluation..."
