@@ -9,8 +9,8 @@ FOLDER = "results/" + NAME
 
 labels = [2, 4, 6, 8, 10]
 p01ValuesTtfb = {2: [], 4: [], 6: [], 8: [], 10: []}
-p01ValuesTrigger = {2: [], 4: [], 6: [], 8: [], 10: []}
 p02ValuesTtfb = {2: [], 4: [], 6: [], 8: [], 10: []}
+p01ValuesTrigger = {2: [], 4: [], 6: [], 8: [], 10: []}
 p02ValuesTrigger = {2: [], 4: [], 6: [], 8: [], 10: []}
 
 for subdir, _, files in os.walk(FOLDER):
@@ -23,19 +23,52 @@ for subdir, _, files in os.walk(FOLDER):
     p = float(pStr[2:-1])
     u = int(uStr[2:-1])
     with open(subdir + "/results.out") as f:
+        num_run_trigger = 0
         for l in f:
             datapoint = json.loads(l)
             # print(datapoint)
             if datapoint["name"] == "time-to-fetch-ms":
-                if p == 0.1:
+                if p == 0.1 and float(datapoint["measures"]["value"]) / 1000.0 < 20:
                     p01ValuesTtfb[u].append(float(datapoint["measures"]["value"]) / 1000.0)
-                if p == 0.2:
+                if p == 0.2 and float(datapoint["measures"]["value"]) / 1000.0 < 20:
                     p02ValuesTtfb[u].append(float(datapoint["measures"]["value"]) / 1000.0)
             if datapoint["name"] == "unforwarded-search-counter":
+                value = int(datapoint["measures"]["value"])
                 if p == 0.1:
-                    p01ValuesTrigger[u].append(int(datapoint["measures"]["value"]))
+                    if len(p01ValuesTrigger[u]) < num_run_trigger + 1:
+                        p01ValuesTrigger[u].append([])
+                    if value > 0:
+                        p01ValuesTrigger[u][num_run_trigger].append(1)
+                    else:
+                        p01ValuesTrigger[u][num_run_trigger].append(0)
+                    num_run_trigger += 1
                 if p == 0.2:
-                    p02ValuesTrigger[u].append(int(datapoint["measures"]["value"]))
+                    if len(p02ValuesTrigger[u]) < num_run_trigger + 1:
+                        p02ValuesTrigger[u].append([])
+                    if value > 0:
+                        p02ValuesTrigger[u][num_run_trigger].append(1)
+                    else:
+                        p02ValuesTrigger[u][num_run_trigger].append(0)
+                    num_run_trigger += 1
+
+p01ValuesTriggerPerc = {2: [], 4: [], 6: [], 8: [], 10: []}
+p02ValuesTriggerPerc = {2: [], 4: [], 6: [], 8: [], 10: []}
+for k in p01ValuesTrigger.keys():
+    for v in p01ValuesTrigger[k]:
+        sum = 0
+        count = 0
+        for t in v:
+            count += 1
+            sum += t
+        p01ValuesTriggerPerc[k].append(sum / count)
+for k in p02ValuesTrigger.keys():
+    for v in p02ValuesTrigger[k]:
+        sum = 0
+        count = 0
+        for t in v:
+            count += 1
+            sum += t
+        p02ValuesTriggerPerc[k].append(sum / count)
 
 # %%
 fig, ax = plt.subplots()
@@ -50,7 +83,7 @@ bpp01 = ax.boxplot(p01ValuesTtfb.values(), widths=0.3, patch_artist=True,
     whiskerprops={"color": "#ae4132", "linewidth": 1.5},
     capprops={"color": "#ae4132", "linewidth": 1.5})
 bpp02 = ax.boxplot(p02ValuesTtfb.values(), widths=0.3, patch_artist=True,
-    showmeans=False, showfliers=False, sym="+",
+    showmeans=False, showfliers=True, sym="+",
     positions=pos+0.2,
     medianprops={"color": "white", "linewidth": 1.0},
     boxprops={"facecolor": "#56517e", "edgecolor": "white",
@@ -61,10 +94,45 @@ bpp02 = ax.boxplot(p02ValuesTtfb.values(), widths=0.3, patch_artist=True,
 plt.xticks(labels, labels)
 ax.set_ylabel("TTFB (s)")
 ax.set_xlabel("unforwarded search timer duration (s)")
-ax.legend([bpp01["boxes"][0], bpp02["boxes"][0]], ["p=0.1", "p=0.2"], loc="upper right")
+
+# grid configuration
+plt.yticks(np.arange(1,16,0.5), minor=True) 
+plt.tick_params(which='minor', length=0)  
+plt.grid(axis="y")
+plt.grid(axis="y", which="minor")
+
+ax.legend([bpp01["boxes"][0], bpp02["boxes"][0]], ["p=0.1", "p=0.2"], loc="upper left")
 
 # plt.savefig("plots/" + NAME + "-ttfb.svg", format="svg")
 plt.show()
 
 # %%
-# todo trigger count (as fraction)
+fig, ax = plt.subplots()
+pos = np.array(list(p01ValuesTriggerPerc.keys()))
+
+bpp01 = ax.boxplot(p01ValuesTriggerPerc.values(), widths=0.3, patch_artist=True,
+    showmeans=False, showfliers=True, sym="+",
+    positions=pos-0.2,
+    medianprops={"color": "white", "linewidth": 1.0},
+    boxprops={"facecolor": "#ae4132", "edgecolor": "white",
+                "linewidth": 0.5},
+    whiskerprops={"color": "#ae4132", "linewidth": 1.5},
+    capprops={"color": "#ae4132", "linewidth": 1.5})
+bpp02 = ax.boxplot(p02ValuesTriggerPerc.values(), widths=0.3, patch_artist=True,
+    showmeans=False, showfliers=True, sym="+",
+    positions=pos+0.2,
+    medianprops={"color": "white", "linewidth": 1.0},
+    boxprops={"facecolor": "#56517e", "edgecolor": "white",
+                "linewidth": 0.5},
+    whiskerprops={"color": "#56517e", "linewidth": 1.5},
+    capprops={"color": "#56517e", "linewidth": 1.5})
+
+plt.xticks(labels, labels)
+ax.set_ylabel("fraction of triggered unforwarded search timers")
+ax.set_xlabel("unforwarded search timer duration (s)")
+
+ax.legend([bpp01["boxes"][0], bpp02["boxes"][0]], ["p=0.1", "p=0.2"], loc="upper right")
+
+# plt.savefig("plots/" + NAME + "-trigger.svg", format="svg")
+plt.show()
+# %%
