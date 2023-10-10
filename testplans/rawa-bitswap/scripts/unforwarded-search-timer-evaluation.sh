@@ -14,7 +14,7 @@ run_testground (){
         --instances=50 \
         --wait \
         -tp run_count=100 \
-        -tp conn_per_node=4 \ 
+        -tp conn_per_node=4 \
         -tp unforwarded_search_time=$UNFORWARDED_TIME \
         -tp proxy_transition_prob=$PROXY_PROB \
         -tp forward_graph_degree=4 \
