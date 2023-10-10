@@ -14,6 +14,7 @@ import (
 	msgio "github.com/libp2p/go-msgio"
 
 	"github.com/libp2p/go-libp2p/core/network"
+	peer "github.com/libp2p/go-libp2p/core/peer"
 	u "github.com/manuelwedler/boxo/util"
 )
 
@@ -79,6 +80,7 @@ type BitSwapMessage interface {
 
 	// STUB FOR COMPATIBILITY WITH THE RAWA-BITSWAP TESTPLAN
 	Forwardlist() []Entry
+	AddForwardHave(cid.Cid, []peer.AddrInfo)
 }
 
 // Exportable is an interface for structures than can be
@@ -505,3 +507,5 @@ func (m *impl) Loggable() map[string]interface{} {
 func (m *impl) Forwardlist() []Entry {
 	return []Entry{}
 }
+
+func (m *impl) AddForwardHave(c cid.Cid, ps []peer.AddrInfo) {}
