@@ -9,7 +9,7 @@ require (
 	github.com/ipfs/go-ipld-format v0.4.0
 	github.com/ipfs/go-log v1.0.5
 	github.com/libp2p/go-libp2p v0.26.3
-	github.com/manuelwedler/boxo v0.8.1-0.20231005130956-5f7473f22979
+	github.com/manuelwedler/boxo v0.8.1-0.20231011153627-669b4c26a14b
 	github.com/multiformats/go-multihash v0.2.1
 	github.com/pkg/errors v0.9.1
 	github.com/testground/sdk-go v0.3.0

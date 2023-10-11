@@ -436,6 +436,15 @@ func runRaWaTest(runenv *runtime.RunEnv, initCtx *run.InitContext) error {
 		}
 
 		// Wait for all nodes to be connected
+		err = signalAndWaitForAll("spy-initializiation-done-" + runId)
+		if err != nil {
+			return err
+		}
+
+		// Shuffle successors
+		bsnode.Bitswap.SelectNewSuccessors()
+
+		// Wait for all nodes to be connected
 		err = signalAndWaitForAll("ready-to-download-" + runId)
 		if err != nil {
 			return err
