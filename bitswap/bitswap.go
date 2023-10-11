@@ -45,6 +45,8 @@ type bitswap interface {
 	ReceiveMessage(ctx context.Context, p peer.ID, incoming message.BitSwapMessage)
 	Stat() (*Stat, error)
 	WantlistForPeer(p peer.ID) []cid.Cid
+	// Only for shuffling successors in the evaluation
+	SelectNewSuccessors()
 }
 
 var _ exchange.SessionExchange = (*Bitswap)(nil)
@@ -191,4 +193,9 @@ func (bs *Bitswap) ReceiveMessage(ctx context.Context, p peer.ID, incoming messa
 
 	bs.Client.ReceiveMessage(ctx, p, incoming)
 	bs.Server.ReceiveMessage(ctx, p, incoming)
+}
+
+// Only for shuffling successors in the evaluation
+func (bs *Bitswap) SelectNewSuccessors() {
+	bs.Client.SelectNewSuccessors()
 }

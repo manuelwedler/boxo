@@ -288,3 +288,7 @@ func (pm *PeerManager) signalAvailability(p peer.ID, isConnected bool) {
 		}
 	}
 }
+
+func (pm *PeerManager) SelectNewSuccessors() {
+	pm.pwm.fgm.SelectNewSuccessors()
+}

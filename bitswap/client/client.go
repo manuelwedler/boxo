@@ -527,3 +527,8 @@ func (bs *Client) NewSession(ctx context.Context) exchange.Fetcher {
 	defer span.End()
 	return bs.sm.NewSession(ctx, bs.provSearchDelay, bs.rebroadcastDelay, bs.unforwardedSearchDelay)
 }
+
+// Only for shuffling successors in the evaluation
+func (bs *Client) SelectNewSuccessors() {
+	bs.pm.SelectNewSuccessors()
+}
