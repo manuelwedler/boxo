@@ -43,6 +43,8 @@ type bitswap interface {
 	ReceiveMessage(ctx context.Context, p peer.ID, incoming message.BitSwapMessage)
 	Stat() (*Stat, error)
 	WantlistForPeer(p peer.ID) []cid.Cid
+	// STUB FOR COMPATIBILITY WITH THE RAWA-BITSWAP TESTPLAN
+	SelectNewSuccessors()
 }
 
 var _ exchange.SessionExchange = (*Bitswap)(nil)
@@ -189,3 +191,5 @@ func (bs *Bitswap) ReceiveMessage(ctx context.Context, p peer.ID, incoming messa
 	bs.Client.ReceiveMessage(ctx, p, incoming)
 	bs.Server.ReceiveMessage(ctx, p, incoming)
 }
+
+func (bs *Bitswap) SelectNewSuccessors() {}
