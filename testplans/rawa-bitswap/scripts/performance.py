@@ -9,9 +9,9 @@ FOLDER = "results/" + NAME
 FOLDER_BASELINE = "results/baseline-" + NAME
 
 labels = [0.05, 0.1, 0.2, 0.3]
-n0Ttfbs = {"0.05": [], "0.1": [], "0.2": [], "0.3": []}
 n2Ttfbs = {"0.05": [], "0.1": [], "0.2": [], "0.3": []}
 n4Ttfbs = {"0.05": [], "0.1": [], "0.2": [], "0.3": []}
+n0Ttfbs = {"0.05": [], "0.1": [], "0.2": [], "0.3": []}
 
 baselineTtfbs = []
 
@@ -89,7 +89,7 @@ ax.legend(
     ["η=1", "η=2", "η=∆(G)"], 
     loc="upper right")
 
-plt.savefig("plots/" + NAME + "-ttfb.svg", format="svg")
+# plt.savefig("plots/" + NAME + "-ttfb.svg", format="svg")
 plt.show()
 
 # %%
@@ -118,7 +118,7 @@ ax.legend(
     ["Baseline Bitswap"], 
     loc="upper right")
 
-plt.savefig("plots/baseline-" + NAME + "-ttfb.svg", format="svg")
+# plt.savefig("plots/baseline-" + NAME + "-ttfb.svg", format="svg")
 plt.show()
 
 # %%
