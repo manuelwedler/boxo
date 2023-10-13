@@ -264,7 +264,15 @@ func runRaWaTest(runenv *runtime.RunEnv, initCtx *run.InitContext) error {
 	for runNum := 1; runNum < runCount+1; runNum++ {
 		isFirstRun := runNum == 1
 		runId := fmt.Sprintf("%d", runNum)
-		runCtx, cancelRun := context.WithTimeout(ctx, timeout)
+
+		var runCtx context.Context
+		var cancelRun context.CancelFunc
+		if isFirstRun {
+			// First run needs a lot of initialization
+			runCtx, cancelRun = context.WithCancel(ctx)
+		} else {
+			runCtx, cancelRun = context.WithTimeout(ctx, timeout)
+		}
 		defer cancelRun()
 
 		// Wait for all nodes to be ready to start the run
