@@ -59,7 +59,7 @@ for subdir, _, files in os.walk(FOLDER_BASELINE):
 
 
 # %%
-fig, ax = plt.subplots()
+fig, ax = plt.subplots(figsize=[3.6, 4.8])
 pos = np.arange(1, 5)
 
 bpp01 = ax.boxplot(n2Precisions.values(), widths=0.2, patch_artist=True,
@@ -100,13 +100,13 @@ plt.grid(axis="y", which="minor")
 ax.legend(
     [bpp01["boxes"][0], bpp02["boxes"][0], bpp03["boxes"][0]], 
     ["η=1", "η=2", "η=∆(G)"], 
-    loc="upper right")
+    loc="lower left")
 
 # plt.savefig("plots/" + NAME + "-precision.svg", format="svg")
 plt.show()
 
 # %%
-fig, ax = plt.subplots()
+fig, ax = plt.subplots(figsize=[3.6, 4.8])
 pos = np.arange(1, 5)
 
 bpp01 = ax.boxplot(n2Recalls.values(), widths=0.2, patch_artist=True,
@@ -147,13 +147,13 @@ plt.grid(axis="y", which="minor")
 ax.legend(
     [bpp01["boxes"][0], bpp02["boxes"][0], bpp03["boxes"][0]], 
     ["η=1", "η=2", "η=∆(G)"], 
-    loc="upper right")
+    loc="lower left")
 
 # plt.savefig("plots/" + NAME + "-recall.svg", format="svg")
 plt.show()
 
 # %%
-fig, ax = plt.subplots()
+fig, ax = plt.subplots(figsize=[3.6, 4.8])
 
 bpp01 = ax.boxplot(baselinePrecisions, widths=0.1, patch_artist=True,
     showmeans=False, showfliers=True, sym="+",
@@ -174,14 +174,14 @@ plt.grid(axis="y", which="minor")
 
 ax.legend(
     [bpp01["boxes"][0]], 
-    ["Baseline Bitswap"], 
+    ["Baseline\nBitswap"], 
     loc="upper right")
 
 # plt.savefig("plots/baseline-" + NAME + "-precision.svg", format="svg")
 plt.show()
 
 # %%
-fig, ax = plt.subplots()
+fig, ax = plt.subplots(figsize=[3.6, 4.8])
 
 bpp01 = ax.boxplot(baselineRecalls, widths=0.1, patch_artist=True,
     showmeans=False, showfliers=True, sym="+",
@@ -202,7 +202,7 @@ plt.grid(axis="y", which="minor")
 
 ax.legend(
     [bpp01["boxes"][0]], 
-    ["Baseline Bitswap"], 
+    ["Baseline\nBitswap"], 
     loc="upper right")
 
 # plt.savefig("plots/baseline-" + NAME + "-recall.svg", format="svg")

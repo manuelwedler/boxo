@@ -46,7 +46,7 @@ for subdir, _, files in os.walk(FOLDER_BASELINE):
 
 
 # %%
-fig, ax = plt.subplots()
+fig, ax = plt.subplots(figsize=[3.6, 4.8])
 pos = np.arange(1, 5)
 
 bpp01 = ax.boxplot(n2Ttfbs.values(), widths=0.2, patch_artist=True,
@@ -93,7 +93,7 @@ ax.legend(
 plt.show()
 
 # %%
-fig, ax = plt.subplots()
+fig, ax = plt.subplots(figsize=[3.6, 4.8])
 
 bpp01 = ax.boxplot(baselineTtfbs, widths=0.1, patch_artist=True,
     showmeans=False, showfliers=True, sym="+",
@@ -115,7 +115,7 @@ plt.grid(axis="y", which="minor")
 
 ax.legend(
     [bpp01["boxes"][0]], 
-    ["Baseline Bitswap"], 
+    ["Baseline\nBitswap"], 
     loc="upper right")
 
 # plt.savefig("plots/baseline-" + NAME + "-ttfb.svg", format="svg")

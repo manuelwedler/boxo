@@ -71,20 +71,20 @@ for k in p02ValuesTrigger.keys():
         p02ValuesTriggerPerc[k].append(sum / count)
 
 # %%
-fig, ax = plt.subplots()
+fig, ax = plt.subplots(figsize=[3.6, 4.8])
 pos = np.array(list(p01ValuesTtfb.keys()))
 
-bpp01 = ax.boxplot(p01ValuesTtfb.values(), widths=0.3, patch_artist=True,
+bpp01 = ax.boxplot(p01ValuesTtfb.values(), widths=0.5, patch_artist=True,
     showmeans=False, showfliers=True, sym="+",
-    positions=pos-0.2,
+    positions=pos-0.3,
     medianprops={"color": "white", "linewidth": 1.0},
     boxprops={"facecolor": "#ae4132", "edgecolor": "white",
                 "linewidth": 0.5},
     whiskerprops={"color": "#ae4132", "linewidth": 1.5},
     capprops={"color": "#ae4132", "linewidth": 1.5})
-bpp02 = ax.boxplot(p02ValuesTtfb.values(), widths=0.3, patch_artist=True,
+bpp02 = ax.boxplot(p02ValuesTtfb.values(), widths=0.5, patch_artist=True,
     showmeans=False, showfliers=True, sym="+",
-    positions=pos+0.2,
+    positions=pos+0.3,
     medianprops={"color": "white", "linewidth": 1.0},
     boxprops={"facecolor": "#56517e", "edgecolor": "white",
                 "linewidth": 0.5},
@@ -107,20 +107,20 @@ ax.legend([bpp01["boxes"][0], bpp02["boxes"][0]], ["p=0.1", "p=0.2"], loc="upper
 plt.show()
 
 # %%
-fig, ax = plt.subplots()
+fig, ax = plt.subplots(figsize=[3.6, 4.8])
 pos = np.array(list(p01ValuesTriggerPerc.keys()))
 
-bpp01 = ax.boxplot(p01ValuesTriggerPerc.values(), widths=0.3, patch_artist=True,
+bpp01 = ax.boxplot(p01ValuesTriggerPerc.values(), widths=0.5, patch_artist=True,
     showmeans=False, showfliers=True, sym="+",
-    positions=pos-0.2,
+    positions=pos-0.3,
     medianprops={"color": "white", "linewidth": 1.0},
     boxprops={"facecolor": "#ae4132", "edgecolor": "white",
                 "linewidth": 0.5},
     whiskerprops={"color": "#ae4132", "linewidth": 1.5},
     capprops={"color": "#ae4132", "linewidth": 1.5})
-bpp02 = ax.boxplot(p02ValuesTriggerPerc.values(), widths=0.3, patch_artist=True,
+bpp02 = ax.boxplot(p02ValuesTriggerPerc.values(), widths=0.5, patch_artist=True,
     showmeans=False, showfliers=True, sym="+",
-    positions=pos+0.2,
+    positions=pos+0.3,
     medianprops={"color": "white", "linewidth": 1.0},
     boxprops={"facecolor": "#56517e", "edgecolor": "white",
                 "linewidth": 0.5},
@@ -135,4 +135,12 @@ ax.legend([bpp01["boxes"][0], bpp02["boxes"][0]], ["p=0.1", "p=0.2"], loc="upper
 
 # plt.savefig("plots/" + NAME + "-trigger.svg", format="svg")
 plt.show()
+# %%
+
+print("MEDIAN TTFB")
+for k, v in p01ValuesTtfb.items():
+    print(f"RaWa [p=0.1,u={k}]: {np.median(v)}")
+for k, v in p02ValuesTtfb.items():
+    print(f"RaWa [p=0.2,u={k}]: {np.median(v)}")
+
 # %%
