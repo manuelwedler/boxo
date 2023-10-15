@@ -28,9 +28,9 @@ for subdir, _, files in os.walk(FOLDER):
             datapoint = json.loads(l)
             # print(datapoint)
             if datapoint["name"] == "time-to-fetch-ms":
-                if p == 0.1 and float(datapoint["measures"]["value"]) / 1000.0 < 20:
+                if p == 0.1:
                     p01ValuesTtfb[u].append(float(datapoint["measures"]["value"]) / 1000.0)
-                if p == 0.2 and float(datapoint["measures"]["value"]) / 1000.0 < 20:
+                if p == 0.2:
                     p02ValuesTtfb[u].append(float(datapoint["measures"]["value"]) / 1000.0)
             if datapoint["name"] == "unforwarded-search-counter":
                 value = int(datapoint["measures"]["value"])
@@ -130,6 +130,12 @@ bpp02 = ax.boxplot(p02ValuesTriggerPerc.values(), widths=0.5, patch_artist=True,
 plt.xticks(labels, labels)
 ax.set_ylabel("fraction of triggered unforwarded search timers")
 ax.set_xlabel("unforwarded search timer duration (s)")
+
+# grid configuration
+plt.yticks(np.arange(0,0.6,0.05), minor=True) 
+plt.tick_params(which='minor', length=0)  
+plt.grid(axis="y")
+plt.grid(axis="y", which="minor")
 
 ax.legend([bpp01["boxes"][0], bpp02["boxes"][0]], ["p=0.1", "p=0.2"], loc="upper right")
 
