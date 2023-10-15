@@ -149,4 +149,10 @@ for k, v in p01ValuesTtfb.items():
 for k, v in p02ValuesTtfb.items():
     print(f"RaWa [p=0.2,u={k}]: {np.median(v)}")
 
+print("MEDIAN trigger fraction")
+for k, v in p01ValuesTriggerPerc.items():
+    print(f"RaWa [p=0.1,u={k}]: {np.median(v)}")
+for k, v in p02ValuesTriggerPerc.items():
+    print(f"RaWa [p=0.2,u={k}]: {np.median(v)}")
+
 # %%
