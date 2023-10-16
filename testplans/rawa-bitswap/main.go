@@ -57,7 +57,9 @@ func runRaWaTest(runenv *runtime.RunEnv, initCtx *run.InitContext) error {
 	firstSpyMode := runenv.BooleanParam("first_spy")
 	forwardExploiterCount := runenv.IntParam("forward_exploiter")
 	forwardExploiterMode := forwardExploiterCount > 0
-	if firstSpyMode && forwardExploiterMode {
+	subgraphAwareExploiterCount := runenv.IntParam("subgraph_aware_exploiter")
+	subgraphAwareExploiterMode := subgraphAwareExploiterCount > 0
+	if firstSpyMode && forwardExploiterMode || firstSpyMode && subgraphAwareExploiterMode || forwardExploiterMode && subgraphAwareExploiterMode {
 		return fmt.Errorf("cannot run two different adversaries at the same time")
 	}
 
@@ -198,6 +200,12 @@ func runRaWaTest(runenv *runtime.RunEnv, initCtx *run.InitContext) error {
 		requestor = false
 		recordMessage("running want-forward exploiter")
 	}
+	if subgraphAwareExploiterMode && (initCtx.GlobalSeq >= 3 && initCtx.GlobalSeq <= 2+int64(subgraphAwareExploiterCount)) {
+		spy = true
+		provider = false
+		requestor = false
+		recordMessage("running subgraph-aware want-forward exploiter")
+	}
 
 	// Use the same blockstore on all runs, just make sure to clear later
 	var bstore blockstore.Blockstore
@@ -223,6 +231,9 @@ func runRaWaTest(runenv *runtime.RunEnv, initCtx *run.InitContext) error {
 	}
 	if forwardExploiterMode {
 		spyCount = forwardExploiterCount
+	}
+	if subgraphAwareExploiterMode {
+		spyCount = subgraphAwareExploiterCount
 	}
 	// number of seeds and leeds is always the same
 	var seedLeechCount int
@@ -289,6 +300,7 @@ func runRaWaTest(runenv *runtime.RunEnv, initCtx *run.InitContext) error {
 		var bsnode *utils.Node
 		providerTopic := sync.NewTopic("provider-info", &ProviderInfo{})
 		interestTopic := sync.NewTopic("interest-info-"+runId, &InterestInfo{})
+		subgraphSuccessorsTopic := sync.NewTopic("subgraph-successors-"+runId, &SuccessorsInfo{})
 
 		network := bsnet.NewFromIpfsHost(h, dht)
 
@@ -302,6 +314,11 @@ func runRaWaTest(runenv *runtime.RunEnv, initCtx *run.InitContext) error {
 		if spy && forwardExploiterMode {
 			exploiter = utils.NewWantForwardExploiter(*host.InfoFromHost(h), network)
 			messageListeners = append(messageListeners, exploiter)
+		}
+		var awareExploiter *utils.SubgraphAwareWantForwardExploiter
+		if spy && subgraphAwareExploiterMode {
+			awareExploiter = utils.NewSubgraphAwareWantForwardExploiter(*host.InfoFromHost(h), network)
+			messageListeners = append(messageListeners, awareExploiter)
 		}
 
 		// Add values for configurable parameters
@@ -341,10 +358,10 @@ func runRaWaTest(runenv *runtime.RunEnv, initCtx *run.InitContext) error {
 				recordMessage("Provider initialization done")
 			}
 
-			if spy && forwardExploiterMode {
+			if spy && (forwardExploiterMode || subgraphAwareExploiterMode) {
 				// Generate all blocks to satisfy requestors
 				for i := 1; i <= runenv.TestInstanceCount; i++ {
-					if i >= 3 && i <= 2+forwardExploiterCount {
+					if i >= 3 && i <= 2+spyCount {
 						continue
 					}
 					tmpFile := utils.RandReader(fileSize, int64(i))
@@ -439,7 +456,7 @@ func runRaWaTest(runenv *runtime.RunEnv, initCtx *run.InitContext) error {
 		if spy && firstSpyMode {
 			// connects to all peers
 			dialed, err = utils.SpyDialAllPeers(runCtx, h, addrInfos, allSpys)
-		} else if spy && forwardExploiterMode {
+		} else if spy && (forwardExploiterMode || subgraphAwareExploiterMode) {
 			dialed, err = utils.SpyDialPeersDeterministically(runCtx, h, addrInfos, allSpys, connPerNode)
 		} else {
 			dialed, err = utils.DialOtherPeers(runCtx, h, addrInfos, allSpys, connPerNode, r.Int63())
@@ -456,7 +473,12 @@ func runRaWaTest(runenv *runtime.RunEnv, initCtx *run.InitContext) error {
 		}
 
 		// Shuffle successors
-		bsnode.Bitswap.SelectNewSuccessors()
+		successors := bsnode.Bitswap.SelectNewSuccessors()
+
+		// Inform other nodes of the successors
+		if _, err = client.Publish(runCtx, subgraphSuccessorsTopic, &SuccessorsInfo{Successors: successors, Peer: h.ID()}); err != nil {
+			return fmt.Errorf("failed to get Redis Sync interestTopic %w", err)
+		}
 
 		err = signalAndWaitForAll("ready-to-download-" + runId)
 		if err != nil {
@@ -507,6 +529,28 @@ func runRaWaTest(runenv *runtime.RunEnv, initCtx *run.InitContext) error {
 				return fmt.Errorf("failed to get Redis Sync spyClassificationTopic %w", err)
 			}
 			recordMessage("Published spy data, %d classifications and %d observed cids", len(class), len(obsC))
+		} else if spy && subgraphAwareExploiterMode {
+			obsC := make([]cid.Cid, 0, len(awareExploiter.ObservedCids))
+			for c := range awareExploiter.ObservedCids {
+				obsC = append(obsC, c)
+			}
+			class := make([]InterestInfo, 0, len(awareExploiter.WantBlockFromPeer))
+			for p, c := range awareExploiter.WantBlockFromPeer {
+				class = append(class, InterestInfo{Cid: c, Peer: p})
+			}
+			proxies := make([]InterestInfo, 0, len(awareExploiter.WantHaveFromPeer))
+			for p, c := range awareExploiter.WantHaveFromPeer {
+				proxies = append(proxies, InterestInfo{Cid: c, Peer: p})
+			}
+			_, err = client.Publish(
+				runCtx,
+				spyClassificationTopic,
+				&SingleSpyClassification{ObservedCids: obsC, Classification: class, ObservedProxies: proxies},
+			)
+			if err != nil {
+				return fmt.Errorf("failed to get Redis Sync spyClassificationTopic %w", err)
+			}
+			recordMessage("Published spy data, %d classifications, %d observed cids, and %d observed proxies", len(class), len(obsC), len(proxies))
 		}
 
 		// Calculate privacy metric on one node
@@ -516,7 +560,7 @@ func runRaWaTest(runenv *runtime.RunEnv, initCtx *run.InitContext) error {
 			if firstSpyMode {
 				classification = classifyByFirstSpyEstimator(recorder, correctInterests, r.Int63())
 				spyTypeStr = "first-spy-estimator"
-			} else if forwardExploiterMode {
+			} else if forwardExploiterMode || subgraphAwareExploiterMode {
 				recordMessage("Accessing other spys classification data")
 				allSpyClassifications := make([]SingleSpyClassification, 0, spyCount)
 				spyClassificationCh := make(chan *SingleSpyClassification)
@@ -536,20 +580,85 @@ func runRaWaTest(runenv *runtime.RunEnv, initCtx *run.InitContext) error {
 				cancelSpyClassificationSub()
 				recordMessage("Accessing other spys classification data done")
 
-				wantBlockFromPeer := make(map[peer.ID]cid.Cid)
-				observedCids := make(map[cid.Cid]struct{})
-				for _, singleClassification := range allSpyClassifications {
-					for _, i := range singleClassification.Classification {
-						wantBlockFromPeer[i.Peer] = i.Cid
+				if forwardExploiterMode {
+					wantBlockFromPeer := make(map[peer.ID]cid.Cid)
+					observedCids := make(map[cid.Cid]struct{})
+					for _, singleClassification := range allSpyClassifications {
+						for _, i := range singleClassification.Classification {
+							wantBlockFromPeer[i.Peer] = i.Cid
+						}
+						for _, c := range singleClassification.ObservedCids {
+							observedCids[c] = struct{}{}
+						}
 					}
-					for _, c := range singleClassification.ObservedCids {
-						observedCids[c] = struct{}{}
-					}
-				}
-				recordMessage("Classification data merged")
+					recordMessage("Classification data merged")
 
-				classification = classifyByWantForwardExploiter(wantBlockFromPeer, observedCids, correctInterests, r.Int63())
-				spyTypeStr = "want-forward-exploiter"
+					classification = classifyByWantForwardExploiter(wantBlockFromPeer, observedCids, correctInterests, r.Int63())
+					spyTypeStr = "want-forward-exploiter"
+				} else if subgraphAwareExploiterMode {
+					wantBlockFromPeer := make(map[peer.ID]cid.Cid)
+					observedCids := make(map[cid.Cid]struct{})
+					wantHaveFromPeer := make(map[peer.ID]cid.Cid)
+					for _, singleClassification := range allSpyClassifications {
+						for _, i := range singleClassification.Classification {
+							wantBlockFromPeer[i.Peer] = i.Cid
+						}
+						for _, c := range singleClassification.ObservedCids {
+							observedCids[c] = struct{}{}
+						}
+						for _, wantHave := range singleClassification.ObservedProxies {
+							if _, ok := wantHaveFromPeer[wantHave.Peer]; ok {
+								// Prefer earlier proxied want-haves
+								continue
+							}
+							wantHaveFromPeer[wantHave.Peer] = wantHave.Cid
+						}
+
+					}
+					recordMessage("Classification data merged")
+
+					recordMessage("Accessing subgraph topology")
+					allSuccessorsInfo := make([]SuccessorsInfo, 0, runenv.TestInstanceCount)
+					allSuccessorsCh := make(chan *SuccessorsInfo)
+					sctx, cancelSuccessorsInfoSub := context.WithCancel(runCtx)
+					if _, err := client.Subscribe(sctx, subgraphSuccessorsTopic, allSuccessorsCh); err != nil {
+						cancelSuccessorsInfoSub()
+						return fmt.Errorf("failed to subscribe to subgraphSuccessorsTopic %w", err)
+					}
+					for i := 1; i <= runenv.TestInstanceCount; i++ {
+						succs, ok := <-allSuccessorsCh
+						if !ok {
+							cancelSuccessorsInfoSub()
+							return fmt.Errorf("subscription to subgraphSuccessorsTopic closed")
+						}
+						allSuccessorsInfo = append(allSuccessorsInfo, *succs)
+					}
+					cancelSuccessorsInfoSub()
+					subgraphTopology := make(map[peer.ID]SubgraphConnections, runenv.TestInstanceCount)
+					for _, si := range allSuccessorsInfo {
+						if _, ok := subgraphTopology[si.Peer]; !ok {
+							subgraphTopology[si.Peer] = SubgraphConnections{
+								Successors:   make(map[peer.ID]struct{}),
+								Predecessors: make(map[peer.ID]struct{}),
+							}
+						}
+						for _, successor := range si.Successors {
+							subgraphTopology[si.Peer].Successors[successor] = struct{}{}
+
+							if _, ok := subgraphTopology[successor]; !ok {
+								subgraphTopology[successor] = SubgraphConnections{
+									Successors:   make(map[peer.ID]struct{}),
+									Predecessors: make(map[peer.ID]struct{}),
+								}
+							}
+							subgraphTopology[successor].Predecessors[si.Peer] = struct{}{}
+						}
+					}
+					recordMessage("Accessing subgraph topology done")
+
+					classification = classifyBySubgraphAwareWantForwardExploiter(wantBlockFromPeer, observedCids, wantHaveFromPeer, subgraphTopology, correctInterests, r.Int63())
+					spyTypeStr = "subgraph-aware-want-forward-exploiter"
+				}
 			}
 			precision, recall := calculatePrecisionRecall(classification, correctInterests)
 
@@ -594,7 +703,7 @@ func runRaWaTest(runenv *runtime.RunEnv, initCtx *run.InitContext) error {
 			}
 		}
 
-		if !(spy && forwardExploiterMode) {
+		if !(spy && (forwardExploiterMode || subgraphAwareExploiterMode)) {
 			// Free up memory by clearing the leech blockstore at the end of each run.
 			// Note that explicitly cleaning up the blockstore from the
 			// previous run allows it to be GCed.
@@ -677,6 +786,52 @@ func classifyByWantForwardExploiter(wantBlockFromPeer map[peer.ID]cid.Cid, cids 
 	return classification
 }
 
+func classifyBySubgraphAwareWantForwardExploiter(
+	wantBlockFromPeer map[peer.ID]cid.Cid,
+	cids map[cid.Cid]struct{},
+	wantHaveFromPeer map[peer.ID]cid.Cid,
+	subgraphTopology map[peer.ID]SubgraphConnections,
+	correctInterests map[peer.ID]cid.Cid,
+	randSeed int64,
+) map[peer.ID]cid.Cid {
+	// correctInterests is only used to determine which honest peers exist
+
+	classification := make(map[peer.ID]cid.Cid, len(correctInterests))
+	for p, c := range wantBlockFromPeer {
+		classification[p] = c
+	}
+
+	// Assign the predecessors of proxies the cid of the proxied want-have
+	for proxy, c := range wantHaveFromPeer {
+		if _, ok := subgraphTopology[proxy]; !ok {
+			continue
+		}
+		for pred := range subgraphTopology[proxy].Predecessors {
+			if _, ok := classification[pred]; ok {
+				continue
+			}
+			classification[pred] = c
+		}
+	}
+
+	observedCids := make([]cid.Cid, 0, len(cids))
+	for c := range cids {
+		observedCids = append(observedCids, c)
+	}
+	// Selected a random cid for any peer not classified yet
+	for p := range correctInterests {
+		if _, ok := classification[p]; ok {
+			continue
+		}
+		rand.Seed(time.Now().Unix() + randSeed)
+		perm := rand.Perm(len(observedCids))
+		selected := observedCids[perm[0]]
+		classification[p] = selected
+	}
+
+	return classification
+}
+
 // Returns precision and recall
 func calculatePrecisionRecall(classification map[peer.ID]cid.Cid, correctInterests map[peer.ID]cid.Cid) (float64, float64) {
 	precisionPerPeer := make([]float64, 0, len(correctInterests))
@@ -728,7 +883,20 @@ type InterestInfo struct {
 	Peer peer.ID
 }
 
+type SuccessorsInfo struct {
+	Successors []peer.ID
+	Peer       peer.ID
+}
+
 type SingleSpyClassification struct {
 	ObservedCids   []cid.Cid
 	Classification []InterestInfo
+	// The type is misused here as want-haves do not represent an interest.
+	// The peer.ID field is the proxy who sent the want-have.
+	ObservedProxies []InterestInfo
+}
+
+type SubgraphConnections struct {
+	Successors   map[peer.ID]struct{}
+	Predecessors map[peer.ID]struct{}
 }

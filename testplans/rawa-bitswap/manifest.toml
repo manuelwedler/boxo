@@ -32,3 +32,4 @@ instances = { min = 3, max = 100, default = 10 }
   closest_peerid_forward = { type = "bool", desc = "if enabled, selects the closest peer to a cid when forwarding, if not, selects randomly", default = false }
   first_spy = { type = "bool", desc = "if enabled the first-spy estimator is added to the network", default = false }
   forward_exploiter = { type = "int", desc = "determines the number of want-forward exploiter nodes that are added to the network", default = 0 }
+  subgraph_aware_exploiter = { type = "int", desc = "determines the number of subgraph-aware want-forward exploiter nodes that are added to the network", default = 0 }
