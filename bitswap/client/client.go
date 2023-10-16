@@ -529,6 +529,6 @@ func (bs *Client) NewSession(ctx context.Context) exchange.Fetcher {
 }
 
 // Only for shuffling successors in the evaluation
-func (bs *Client) SelectNewSuccessors() {
-	bs.pm.SelectNewSuccessors()
+func (bs *Client) SelectNewSuccessors() []peer.ID {
+	return bs.pm.SelectNewSuccessors()
 }

@@ -46,7 +46,7 @@ type bitswap interface {
 	Stat() (*Stat, error)
 	WantlistForPeer(p peer.ID) []cid.Cid
 	// Only for shuffling successors in the evaluation
-	SelectNewSuccessors()
+	SelectNewSuccessors() []peer.ID
 }
 
 var _ exchange.SessionExchange = (*Bitswap)(nil)
@@ -196,6 +196,6 @@ func (bs *Bitswap) ReceiveMessage(ctx context.Context, p peer.ID, incoming messa
 }
 
 // Only for shuffling successors in the evaluation
-func (bs *Bitswap) SelectNewSuccessors() {
-	bs.Client.SelectNewSuccessors()
+func (bs *Bitswap) SelectNewSuccessors() []peer.ID {
+	return bs.Client.SelectNewSuccessors()
 }

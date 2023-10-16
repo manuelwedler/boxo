@@ -125,12 +125,17 @@ func (fgm *forwardGraphManager) GetSuccessorByStrategy(c cid.Cid, exclude []peer
 }
 
 // Replaces all successors with newly chosen ones.
-func (fgm *forwardGraphManager) SelectNewSuccessors() {
+// Returns the new successors.
+func (fgm *forwardGraphManager) SelectNewSuccessors() []peer.ID {
 	fgm.lk.Lock()
 	defer fgm.lk.Unlock()
 
 	if fgm.useCompleteGraph() {
-		return
+		result := make([]peer.ID, 0, len(fgm.connectedPeers))
+		for p := range fgm.connectedPeers {
+			result = append(result, p)
+		}
+		return result
 	}
 	for s := range fgm.successors {
 		fgm.removeSuccessor(s)
@@ -144,6 +149,12 @@ func (fgm *forwardGraphManager) SelectNewSuccessors() {
 		<-fgm.reconstructGraphTimer.C
 	}
 	fgm.reconstructGraphTimer.Reset(reconstructGraphDelay)
+
+	result := make([]peer.ID, 0, len(fgm.successors))
+	for p := range fgm.successors {
+		result = append(result, p)
+	}
+	return result
 }
 
 // Randomly selects one peer among the connected to be a successor.
