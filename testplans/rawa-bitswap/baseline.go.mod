@@ -19,7 +19,7 @@ require (
 // This fixes the panic: send on closed channel issue
 replace github.com/testground/sdk-go v0.3.0 => github.com/hannahhoward/sdk-go v0.3.1-0.20220106065751-1280c9501986
 
-replace github.com/manuelwedler/boxo => github.com/manuelwedler/boxo v0.8.1-0.20231012103819-d851c8acbb95
+replace github.com/manuelwedler/boxo => github.com/manuelwedler/boxo v0.8.1-0.20231016202621-5e9f2d636d55
 
 require (
 	github.com/alecthomas/units v0.0.0-20210927113745-59d0afb8317a // indirect
