@@ -55,7 +55,8 @@ func runRaWaTest(runenv *runtime.RunEnv, initCtx *run.InitContext) error {
 	connPerNode := runenv.IntParam("conn_per_node")
 	allMode := runenv.BooleanParam("all_mode")
 	firstSpyMode := runenv.BooleanParam("first_spy")
-	forwardExploiterMode := runenv.BooleanParam("forward_exploiter")
+	forwardExploiterCount := runenv.IntParam("forward_exploiter")
+	forwardExploiterMode := forwardExploiterCount > 0
 	if firstSpyMode && forwardExploiterMode {
 		return fmt.Errorf("cannot run two different adversaries at the same time")
 	}
@@ -191,7 +192,7 @@ func runRaWaTest(runenv *runtime.RunEnv, initCtx *run.InitContext) error {
 		requestor = false
 		recordMessage("running first-spy estimator")
 	}
-	if forwardExploiterMode && initCtx.GlobalSeq == 3 {
+	if forwardExploiterMode && (initCtx.GlobalSeq >= 3 && initCtx.GlobalSeq <= 2+int64(forwardExploiterCount)) {
 		spy = true
 		provider = false
 		requestor = false
@@ -217,8 +218,11 @@ func runRaWaTest(runenv *runtime.RunEnv, initCtx *run.InitContext) error {
 	rand.Seed(rSeed)
 
 	spyCount := 0
-	if firstSpyMode || forwardExploiterMode {
+	if firstSpyMode {
 		spyCount = 1
+	}
+	if forwardExploiterMode {
+		spyCount = forwardExploiterCount
 	}
 	// number of seeds and leeds is always the same
 	var seedLeechCount int
@@ -319,7 +323,7 @@ func runRaWaTest(runenv *runtime.RunEnv, initCtx *run.InitContext) error {
 			if provider {
 				recordMessage("Generating seed data of %d bytes", fileSize)
 
-				tmpFile := utils.RandReader(fileSize, r.Int63())
+				tmpFile := utils.RandReader(fileSize, initCtx.GlobalSeq)
 				ipldNode, err := bsnode.Add(runCtx, tmpFile)
 				if err != nil {
 					return fmt.Errorf("failed to set up seed: %w", err)
@@ -335,6 +339,21 @@ func runRaWaTest(runenv *runtime.RunEnv, initCtx *run.InitContext) error {
 					return fmt.Errorf("failed to get Redis Sync providerTopic %w", err)
 				}
 				recordMessage("Provider initialization done")
+			}
+
+			if spy && forwardExploiterMode {
+				// Generate all blocks to satisfy requestors
+				for i := 1; i <= runenv.TestInstanceCount; i++ {
+					if i >= 3 && i <= 2+forwardExploiterCount {
+						continue
+					}
+					tmpFile := utils.RandReader(fileSize, int64(i))
+					ipldNode, err := bsnode.Add(runCtx, tmpFile)
+					if err != nil {
+						return fmt.Errorf("failed to set up spy: %w", err)
+					}
+					recordMessage("Spy generated block for cid: %s", ipldNode.Cid())
+				}
 			}
 
 			recordMessage("Accessing root cid and provider information for stub dht")
@@ -417,10 +436,11 @@ func runRaWaTest(runenv *runtime.RunEnv, initCtx *run.InitContext) error {
 		// Dial connPerNode peers
 		var err error
 		var dialed []peer.AddrInfo
-		if spy {
-			// todo / make sure to not connect to all peers with different adversary
+		if spy && firstSpyMode {
 			// connects to all peers
-			dialed, err = utils.SpyDialPeers(runCtx, h, addrInfos, allSpys)
+			dialed, err = utils.SpyDialAllPeers(runCtx, h, addrInfos, allSpys)
+		} else if spy && forwardExploiterMode {
+			dialed, err = utils.SpyDialPeersDeterministically(runCtx, h, addrInfos, allSpys, connPerNode)
 		} else {
 			dialed, err = utils.DialOtherPeers(runCtx, h, addrInfos, allSpys, connPerNode, r.Int63())
 		}
@@ -435,24 +455,9 @@ func runRaWaTest(runenv *runtime.RunEnv, initCtx *run.InitContext) error {
 			return err
 		}
 
-		if isFirstRun && spy && forwardExploiterMode {
-			// Get all blocks to satisfy requestors
-			for _, i := range allProviderInfos {
-				bsnode.FetchGraph(runCtx, i.Cid)
-			}
-			recordMessage("Downloaded all blocks")
-		}
-
-		// Wait for all nodes to be connected
-		err = signalAndWaitForAll("spy-initializiation-done-" + runId)
-		if err != nil {
-			return err
-		}
-
 		// Shuffle successors
 		bsnode.Bitswap.SelectNewSuccessors()
 
-		// Wait for all nodes to be connected
 		err = signalAndWaitForAll("ready-to-download-" + runId)
 		if err != nil {
 			return err
@@ -480,15 +485,70 @@ func runRaWaTest(runenv *runtime.RunEnv, initCtx *run.InitContext) error {
 			return err
 		}
 
-		// Calculate privacy metric
-		if spy {
+		spyClassificationTopic := sync.NewTopic(
+			"spy-classification-"+runId,
+			&SingleSpyClassification{},
+		)
+		if spy && forwardExploiterMode {
+			obsC := make([]cid.Cid, 0, len(exploiter.ObservedCids))
+			for c := range exploiter.ObservedCids {
+				obsC = append(obsC, c)
+			}
+			class := make([]InterestInfo, 0, len(exploiter.WantBlockFromPeer))
+			for p, c := range exploiter.WantBlockFromPeer {
+				class = append(class, InterestInfo{Cid: c, Peer: p})
+			}
+			_, err = client.Publish(
+				runCtx,
+				spyClassificationTopic,
+				&SingleSpyClassification{ObservedCids: obsC, Classification: class},
+			)
+			if err != nil {
+				return fmt.Errorf("failed to get Redis Sync spyClassificationTopic %w", err)
+			}
+			recordMessage("Published spy data, %d classifications and %d observed cids", len(class), len(obsC))
+		}
+
+		// Calculate privacy metric on one node
+		if spy && initCtx.GlobalSeq == 3 {
 			var classification map[peer.ID]cid.Cid
 			var spyTypeStr string
 			if firstSpyMode {
 				classification = classifyByFirstSpyEstimator(recorder, correctInterests, r.Int63())
 				spyTypeStr = "first-spy-estimator"
 			} else if forwardExploiterMode {
-				classification = classifyByWantForwardExploiter(exploiter, correctInterests, r.Int63())
+				recordMessage("Accessing other spys classification data")
+				allSpyClassifications := make([]SingleSpyClassification, 0, spyCount)
+				spyClassificationCh := make(chan *SingleSpyClassification)
+				sctx, cancelSpyClassificationSub := context.WithCancel(runCtx)
+				if _, err := client.Subscribe(sctx, spyClassificationTopic, spyClassificationCh); err != nil {
+					cancelSpyClassificationSub()
+					return fmt.Errorf("failed to subscribe to spyClassificationTopic %w", err)
+				}
+				for i := 1; i <= spyCount; i++ {
+					singleClassification, ok := <-spyClassificationCh
+					if !ok {
+						cancelSpyClassificationSub()
+						return fmt.Errorf("subscription to spyClassificationTopic closed")
+					}
+					allSpyClassifications = append(allSpyClassifications, *singleClassification)
+				}
+				cancelSpyClassificationSub()
+				recordMessage("Accessing other spys classification data done")
+
+				wantBlockFromPeer := make(map[peer.ID]cid.Cid)
+				observedCids := make(map[cid.Cid]struct{})
+				for _, singleClassification := range allSpyClassifications {
+					for _, i := range singleClassification.Classification {
+						wantBlockFromPeer[i.Peer] = i.Cid
+					}
+					for _, c := range singleClassification.ObservedCids {
+						observedCids[c] = struct{}{}
+					}
+				}
+				recordMessage("Classification data merged")
+
+				classification = classifyByWantForwardExploiter(wantBlockFromPeer, observedCids, correctInterests, r.Int63())
 				spyTypeStr = "want-forward-exploiter"
 			}
 			precision, recall := calculatePrecisionRecall(classification, correctInterests)
@@ -590,16 +650,16 @@ func classifyByFirstSpyEstimator(recorder *utils.MessageRecorder, correctInteres
 	return classification
 }
 
-func classifyByWantForwardExploiter(exploiter *utils.WantForwardExploiter, correctInterests map[peer.ID]cid.Cid, randSeed int64) map[peer.ID]cid.Cid {
+func classifyByWantForwardExploiter(wantBlockFromPeer map[peer.ID]cid.Cid, cids map[cid.Cid]struct{}, correctInterests map[peer.ID]cid.Cid, randSeed int64) map[peer.ID]cid.Cid {
 	// correctInterests is only used to determine which honest peers exist
 
 	classification := make(map[peer.ID]cid.Cid, len(correctInterests))
-	for p, c := range exploiter.WantBlockFromPeer {
+	for p, c := range wantBlockFromPeer {
 		classification[p] = c
 	}
 
-	observedCids := make([]cid.Cid, 0, len(exploiter.ObservedCids))
-	for c := range exploiter.ObservedCids {
+	observedCids := make([]cid.Cid, 0, len(cids))
+	for c := range cids {
 		observedCids = append(observedCids, c)
 	}
 
@@ -666,4 +726,9 @@ type ProviderInfo struct {
 type InterestInfo struct {
 	Cid  cid.Cid
 	Peer peer.ID
+}
+
+type SingleSpyClassification struct {
+	ObservedCids   []cid.Cid
+	Classification []InterestInfo
 }
