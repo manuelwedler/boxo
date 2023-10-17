@@ -88,7 +88,7 @@ bpp03 = ax.boxplot(n0Precisions.values(), widths=0.2, patch_artist=True,
     capprops={"color": "#b46504", "linewidth": 1.5})
 
 plt.xticks([1,2,3,4], labels)
-ax.set_ylabel("precision D")
+ax.set_ylabel("precision D of FSE")
 ax.set_xlabel("proxy transition probability p")
 
 # grid configuration
@@ -135,7 +135,7 @@ bpp03 = ax.boxplot(n0Recalls.values(), widths=0.2, patch_artist=True,
     capprops={"color": "#b46504", "linewidth": 1.5})
 
 plt.xticks([1,2,3,4], labels)
-ax.set_ylabel("recall R")
+ax.set_ylabel("recall R of FSE")
 ax.set_xlabel("proxy transition probability p")
 
 # grid configuration
@@ -164,7 +164,7 @@ bpp01 = ax.boxplot(baselinePrecisions, widths=0.1, patch_artist=True,
     capprops={"color": "#0e8088", "linewidth": 1.5})
 
 plt.xticks([], [])
-ax.set_ylabel("precision D")
+ax.set_ylabel("precision D of FSE")
 
 # grid configuration
 plt.yticks(np.arange(0.5,0.8,0.05), minor=True)
@@ -192,7 +192,7 @@ bpp01 = ax.boxplot(baselineRecalls, widths=0.1, patch_artist=True,
     capprops={"color": "#0e8088", "linewidth": 1.5})
 
 plt.xticks([], [])
-ax.set_ylabel("recall R")
+ax.set_ylabel("recall R of FSE")
 
 # grid configuration
 plt.yticks(np.arange(0.55,0.8,0.05), minor=True)
