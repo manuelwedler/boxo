@@ -130,7 +130,7 @@ for k, v in n2Ttfbs.items():
 for k, v in n4Ttfbs.items():
     print(f"RaWa [η=2,p={k}]: {np.mean(v)}")
 for k, v in n0Ttfbs.items():
-    print(f"RaWa [η=4,p={k}]: {np.mean(v)}")
+    print(f"RaWa [η=∆(G),p={k}]: {np.mean(v)}")
 
 print()
 
@@ -141,6 +141,6 @@ for k, v in n2Ttfbs.items():
 for k, v in n4Ttfbs.items():
     print(f"RaWa [η=2,p={k}]: {np.median(v)}")
 for k, v in n0Ttfbs.items():
-    print(f"RaWa [η=4,p={k}]: {np.median(v)}")
+    print(f"RaWa [η=∆(G),p={k}]: {np.median(v)}")
 
 # %%
