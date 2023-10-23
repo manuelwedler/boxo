@@ -123,24 +123,60 @@ plt.show()
 
 # %%
 
-print("MEANS")
-print(f"baseline: {np.mean(baselineTtfbs)}")
-for k, v in n2Ttfbs.items():
-    print(f"RaWa [η=1,p={k}]: {np.mean(v)}")
-for k, v in n4Ttfbs.items():
-    print(f"RaWa [η=2,p={k}]: {np.mean(v)}")
-for k, v in n0Ttfbs.items():
-    print(f"RaWa [η=∆(G),p={k}]: {np.mean(v)}")
+# print("MEANS")
+# print(f"baseline: {np.mean(baselineTtfbs)}")
+# for k, v in n2Ttfbs.items():
+#     print(f"RaWa [η=1,p={k}]: {np.mean(v)}")
+# for k, v in n4Ttfbs.items():
+#     print(f"RaWa [η=2,p={k}]: {np.mean(v)}")
+# for k, v in n0Ttfbs.items():
+#     print(f"RaWa [η=∆(G),p={k}]: {np.mean(v)}")
 
-print()
+# print()
 
 print("MEDIAN")
-print(f"baseline: {np.median(baselineTtfbs)}")
+print(f"baseline: {round(np.median(baselineTtfbs), 2)}")
 for k, v in n2Ttfbs.items():
-    print(f"RaWa [η=1,p={k}]: {np.median(v)}")
+    print(f"RaWa [η=1,p={k}]: {round(np.median(v), 2)}")
 for k, v in n4Ttfbs.items():
-    print(f"RaWa [η=2,p={k}]: {np.median(v)}")
+    print(f"RaWa [η=2,p={k}]: {round(np.median(v), 2)}")
 for k, v in n0Ttfbs.items():
-    print(f"RaWa [η=∆(G),p={k}]: {np.median(v)}")
+    print(f"RaWa [η=∆(G),p={k}]: {round(np.median(v), 2)}")
+
+
+# %%
+
+print("Q1 & Q3 TTTFB")
+print(f"baseline: {round(np.quantile(baselineTtfbs, 0.25), 2)} - {round(np.quantile(baselineTtfbs, 0.75), 2)}")
+for k, v in n2Ttfbs.items():
+    print(f"RaWa [η=1,p={k}]: {round(np.quantile(v, 0.25), 2)} - {round(np.quantile(v, 0.75), 2)}")
+for k, v in n4Ttfbs.items():
+    print(f"RaWa [η=2,p={k}]: {round(np.quantile(v, 0.25), 2)} - {round(np.quantile(v, 0.75), 2)}")
+for k, v in n0Ttfbs.items():
+    print(f"RaWa [η=∆(G),p={k}]: {round(np.quantile(v, 0.25), 2)} - {round(np.quantile(v, 0.75), 2)}")
+
+# %%
+
+def maximum(v):
+    q1 = np.quantile(v, 0.25)
+    q3 = np.quantile(v, 0.75)
+    iqr = q3 - q1
+    return q3 + 1.5 * iqr
+
+def minimum(v):
+    q1 = np.quantile(v, 0.25)
+    q3 = np.quantile(v, 0.75)
+    iqr = q3 - q1
+    return q1 - 1.5 * iqr
+
+print("Q0 & Q4 TTTFB")
+print(f"baseline: {round(minimum(baselineTtfbs), 2)} - {round(maximum(baselineTtfbs), 2)}")
+for k, v in n2Ttfbs.items():
+    print(f"RaWa [η=1,p={k}]: {round(minimum(v), 2)} - {round(maximum(v), 2)}")
+for k, v in n4Ttfbs.items():
+    print(f"RaWa [η=2,p={k}]: {round(minimum(v), 2)} - {round(maximum(v), 2)}")
+for k, v in n0Ttfbs.items():
+    print(f"RaWa [η=∆(G),p={k}]: {round(minimum(v), 2)} - {round(maximum(v), 2)}")
+
 
 # %%

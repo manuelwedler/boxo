@@ -253,3 +253,25 @@ for k, v in n0Recalls.items():
     print(f"RaWa [η=∆(G),p={k}]: {np.median(v)}")
 
 # %%
+
+print("Q1 & Q3 RECALL FSE")
+print(f"baseline: {round(np.quantile(baselineRecalls, 0.25), 2)} - {round(np.quantile(baselineRecalls, 0.75), 2)}")
+for k, v in n2Recalls.items():
+    print(f"RaWa [η=1,p={k}]: {round(np.quantile(v, 0.25), 2)} - {round(np.quantile(v, 0.75), 2)}")
+for k, v in n4Recalls.items():
+    print(f"RaWa [η=2,p={k}]: {round(np.quantile(v, 0.25), 2)} - {round(np.quantile(v, 0.75), 2)}")
+for k, v in n0Recalls.items():
+    print(f"RaWa [η=∆(G),p={k}]: {round(np.quantile(v, 0.25), 2)} - {round(np.quantile(v, 0.75), 2)}")
+
+print()
+
+print("Q1 & Q3 PRECISION FSE")
+print(f"baseline: {round(np.quantile(baselinePrecisions, 0.25), 2)} - {round(np.quantile(baselinePrecisions, 0.75), 2)}")
+for k, v in n2Precisions.items():
+    print(f"RaWa [η=1,p={k}]: {round(np.quantile(v, 0.25), 2)} - {round(np.quantile(v, 0.75), 2)}")
+for k, v in n4Precisions.items():
+    print(f"RaWa [η=2,p={k}]: {round(np.quantile(v, 0.25), 2)} - {round(np.quantile(v, 0.75), 2)}")
+for k, v in n0Precisions.items():
+    print(f"RaWa [η=∆(G),p={k}]: {round(np.quantile(v, 0.25), 2)} - {round(np.quantile(v, 0.75), 2)}")
+
+# %%

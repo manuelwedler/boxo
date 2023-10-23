@@ -145,14 +145,16 @@ plt.show()
 
 print("MEDIAN TTFB")
 for k, v in p01ValuesTtfb.items():
-    print(f"RaWa [p=0.1,u={k}]: {np.median(v)}")
+    print(f"RaWa [p=0.1,u={k}]: {round(np.median(v), 2)}")
 for k, v in p02ValuesTtfb.items():
-    print(f"RaWa [p=0.2,u={k}]: {np.median(v)}")
+    print(f"RaWa [p=0.2,u={k}]: {round(np.median(v), 2)}")
+
+print()
 
 print("MEDIAN trigger fraction")
 for k, v in p01ValuesTriggerPerc.items():
-    print(f"RaWa [p=0.1,u={k}]: {np.median(v)}")
+    print(f"RaWa [p=0.1,u={k}]: {round(np.median(v), 2)}")
 for k, v in p02ValuesTriggerPerc.items():
-    print(f"RaWa [p=0.2,u={k}]: {np.median(v)}")
+    print(f"RaWa [p=0.2,u={k}]: {round(np.median(v), 2)}")
 
 # %%
