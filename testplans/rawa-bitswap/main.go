@@ -34,7 +34,6 @@ var (
 		"rawa-test": run.InitializedTestCaseFn(runRaWaTest),
 	}
 	bstoreDelay  = time.Duration(5) * time.Millisecond
-	latency      = 100 * time.Millisecond
 	jitter       = 10 * time.Millisecond // 10% jitter
 	bandwidth    = 1024 * 1024           // 1MiB
 	dhtStubDelay = time.Duration(622) * time.Millisecond
@@ -71,6 +70,8 @@ func runRaWaTest(runenv *runtime.RunEnv, initCtx *run.InitContext) error {
 	if forwardGraphDegree == 0 {
 		forwardGraphDegree = math.MaxUint64
 	}
+
+	latency := time.Duration(runenv.IntParam("net_latency")) * time.Millisecond
 
 	// Show debug logs
 	if debug {
