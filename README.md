@@ -23,7 +23,7 @@ To run the plan, first start your Testground daemon:
 testground daemon
 ```
 
-Import the test plan once. Run in a sepearte terminal:
+Import the test plan once. Run in a separate terminal:
 
 ```bash
 cd testplans
