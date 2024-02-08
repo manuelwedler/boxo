@@ -34,3 +34,4 @@ instances = { min = 3, max = 100, default = 10 }
   forward_exploiter = { type = "int", desc = "determines the number of want-forward exploiter nodes that are added to the network", default = 0 }
   subgraph_aware_exploiter = { type = "int", desc = "determines the number of subgraph-aware want-forward exploiter nodes that are added to the network", default = 0 }
   net_latency = { type = "int", desc = "latency of all network links", unit = "milliseconds", default = 100 }
+  file_size = { type = "int", desc = "size of the file each node generates in bytes", default = 153600 }

@@ -37,9 +37,6 @@ var (
 	jitter       = 10 * time.Millisecond // 10% jitter
 	bandwidth    = 1024 * 1024           // 1MiB
 	dhtStubDelay = time.Duration(622) * time.Millisecond
-	// Chunker chunks into 256kiB blocks
-	// This size fits in 1 block
-	fileSize = 150 * 1024 // 150 kiB
 )
 
 func main() {
@@ -72,6 +69,8 @@ func runRaWaTest(runenv *runtime.RunEnv, initCtx *run.InitContext) error {
 	}
 
 	latency := time.Duration(runenv.IntParam("net_latency")) * time.Millisecond
+	// Chunker chunks into 256kiB blocks
+	fileSize := runenv.IntParam("file_size")
 
 	// Show debug logs
 	if debug {
