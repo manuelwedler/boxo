@@ -736,7 +736,7 @@ func classifyByFirstSpyEstimator(recorder *utils.MessageRecorder, correctInteres
 	// correctInterests is only used to determine which honest peers exist
 
 	classification := make(map[peer.ID]cid.Cid, len(correctInterests))
-	for p, c := range recorder.FirstNewCidForPeer {
+	for p, c := range recorder.FirstCidForPeer {
 		classification[p] = c
 	}
 

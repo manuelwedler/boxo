@@ -15,18 +15,16 @@ type MessageRecorder struct {
 
 	Spys map[peer.ID]struct{}
 
-	ObservedCids       map[cid.Cid]struct{}
-	AssignedCids       map[cid.Cid]struct{}
-	FirstNewCidForPeer map[peer.ID]cid.Cid
+	ObservedCids    map[cid.Cid]struct{}
+	FirstCidForPeer map[peer.ID]cid.Cid
 }
 
 func NewMessageRecorder(spys map[peer.ID]struct{}) *MessageRecorder {
 	recorder := &MessageRecorder{
 		Spys: spys,
 
-		ObservedCids:       make(map[cid.Cid]struct{}),
-		AssignedCids:       make(map[cid.Cid]struct{}),
-		FirstNewCidForPeer: make(map[peer.ID]cid.Cid),
+		ObservedCids:    make(map[cid.Cid]struct{}),
+		FirstCidForPeer: make(map[peer.ID]cid.Cid),
 	}
 
 	return recorder
@@ -51,12 +49,8 @@ func (mr *MessageRecorder) ReceiveMessage(_ context.Context, sender peer.ID, inc
 
 func (mr *MessageRecorder) observed(sender peer.ID, c cid.Cid) {
 	mr.ObservedCids[c] = struct{}{}
-	if _, ok := mr.AssignedCids[c]; ok {
-		return
-	}
-	if _, ok := mr.FirstNewCidForPeer[sender]; !ok {
-		mr.FirstNewCidForPeer[sender] = c
-		mr.AssignedCids[c] = struct{}{}
+	if _, ok := mr.FirstCidForPeer[sender]; !ok {
+		mr.FirstCidForPeer[sender] = c
 	}
 }
 
