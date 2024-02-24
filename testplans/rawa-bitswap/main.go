@@ -556,9 +556,10 @@ func runRaWaTest(runenv *runtime.RunEnv, initCtx *run.InitContext) error {
 		// Calculate privacy metric on one node
 		if spy && initCtx.GlobalSeq == 3 {
 			var classification map[peer.ID]cid.Cid
+			var randomClassificationCount int
 			var spyTypeStr string
 			if firstSpyMode {
-				classification = classifyByFirstSpyEstimator(recorder, correctInterests, r.Int63())
+				classification, randomClassificationCount = classifyByFirstSpyEstimator(recorder, correctInterests, r.Int63())
 				spyTypeStr = "first-spy-estimator"
 			} else if forwardExploiterMode || subgraphAwareExploiterMode {
 				recordMessage("Accessing other spys classification data")
@@ -593,7 +594,7 @@ func runRaWaTest(runenv *runtime.RunEnv, initCtx *run.InitContext) error {
 					}
 					recordMessage("Classification data merged")
 
-					classification = classifyByWantForwardExploiter(wantBlockFromPeer, observedCids, correctInterests, r.Int63())
+					classification, randomClassificationCount = classifyByWantForwardExploiter(wantBlockFromPeer, observedCids, correctInterests, r.Int63())
 					spyTypeStr = "want-forward-exploiter"
 				} else if subgraphAwareExploiterMode {
 					wantBlockFromPeer := make(map[peer.ID]cid.Cid)
@@ -656,7 +657,7 @@ func runRaWaTest(runenv *runtime.RunEnv, initCtx *run.InitContext) error {
 					}
 					recordMessage("Accessing subgraph topology done")
 
-					classification = classifyBySubgraphAwareWantForwardExploiter(wantBlockFromPeer, observedCids, wantHaveFromPeer, subgraphTopology, correctInterests, r.Int63())
+					classification, randomClassificationCount = classifyBySubgraphAwareWantForwardExploiter(wantBlockFromPeer, observedCids, wantHaveFromPeer, subgraphTopology, correctInterests, r.Int63())
 					spyTypeStr = "subgraph-aware-want-forward-exploiter"
 				}
 			}
@@ -664,6 +665,7 @@ func runRaWaTest(runenv *runtime.RunEnv, initCtx *run.InitContext) error {
 
 			recordMessage(spyTypeStr+" precision: %g", precision)
 			recordMessage(spyTypeStr+" recall: %g", recall)
+			recordMessage(spyTypeStr+" random classification count: %v", randomClassificationCount)
 			runenv.R().RecordPoint(spyTypeStr+"-precision", precision)
 			runenv.R().RecordPoint(spyTypeStr+"-recall", recall)
 		}
@@ -732,7 +734,7 @@ func runRaWaTest(runenv *runtime.RunEnv, initCtx *run.InitContext) error {
 	return nil
 }
 
-func classifyByFirstSpyEstimator(recorder *utils.MessageRecorder, correctInterests map[peer.ID]cid.Cid, randSeed int64) map[peer.ID]cid.Cid {
+func classifyByFirstSpyEstimator(recorder *utils.MessageRecorder, correctInterests map[peer.ID]cid.Cid, randSeed int64) (map[peer.ID]cid.Cid, int) {
 	// correctInterests is only used to determine which honest peers exist
 
 	classification := make(map[peer.ID]cid.Cid, len(correctInterests))
@@ -745,6 +747,7 @@ func classifyByFirstSpyEstimator(recorder *utils.MessageRecorder, correctInteres
 		observedCids = append(observedCids, c)
 	}
 
+	randomCount := 0
 	// Selected a random cid for any peer not classified yet
 	for p := range correctInterests {
 		if _, ok := classification[p]; ok {
@@ -754,12 +757,13 @@ func classifyByFirstSpyEstimator(recorder *utils.MessageRecorder, correctInteres
 		perm := rand.Perm(len(observedCids))
 		selected := observedCids[perm[0]]
 		classification[p] = selected
+		randomCount += 1
 	}
 
-	return classification
+	return classification, randomCount
 }
 
-func classifyByWantForwardExploiter(wantBlockFromPeer map[peer.ID]cid.Cid, cids map[cid.Cid]struct{}, correctInterests map[peer.ID]cid.Cid, randSeed int64) map[peer.ID]cid.Cid {
+func classifyByWantForwardExploiter(wantBlockFromPeer map[peer.ID]cid.Cid, cids map[cid.Cid]struct{}, correctInterests map[peer.ID]cid.Cid, randSeed int64) (map[peer.ID]cid.Cid, int) {
 	// correctInterests is only used to determine which honest peers exist
 
 	classification := make(map[peer.ID]cid.Cid, len(correctInterests))
@@ -772,6 +776,7 @@ func classifyByWantForwardExploiter(wantBlockFromPeer map[peer.ID]cid.Cid, cids 
 		observedCids = append(observedCids, c)
 	}
 
+	randomCount := 0
 	// Selected a random cid for any peer not classified yet
 	for p := range correctInterests {
 		if _, ok := classification[p]; ok {
@@ -781,9 +786,10 @@ func classifyByWantForwardExploiter(wantBlockFromPeer map[peer.ID]cid.Cid, cids 
 		perm := rand.Perm(len(observedCids))
 		selected := observedCids[perm[0]]
 		classification[p] = selected
+		randomCount += 1
 	}
 
-	return classification
+	return classification, randomCount
 }
 
 func classifyBySubgraphAwareWantForwardExploiter(
@@ -793,7 +799,7 @@ func classifyBySubgraphAwareWantForwardExploiter(
 	subgraphTopology map[peer.ID]SubgraphConnections,
 	correctInterests map[peer.ID]cid.Cid,
 	randSeed int64,
-) map[peer.ID]cid.Cid {
+) (map[peer.ID]cid.Cid, int) {
 	// correctInterests is only used to determine which honest peers exist
 
 	classification := make(map[peer.ID]cid.Cid, len(correctInterests))
@@ -818,6 +824,8 @@ func classifyBySubgraphAwareWantForwardExploiter(
 	for c := range cids {
 		observedCids = append(observedCids, c)
 	}
+
+	randomCount := 0
 	// Selected a random cid for any peer not classified yet
 	for p := range correctInterests {
 		if _, ok := classification[p]; ok {
@@ -827,9 +835,10 @@ func classifyBySubgraphAwareWantForwardExploiter(
 		perm := rand.Perm(len(observedCids))
 		selected := observedCids[perm[0]]
 		classification[p] = selected
+		randomCount += 1
 	}
 
-	return classification
+	return classification, randomCount
 }
 
 // Returns precision and recall
