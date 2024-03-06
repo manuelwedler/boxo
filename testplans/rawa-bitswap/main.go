@@ -846,23 +846,27 @@ func calculatePrecisionRecall(classification map[peer.ID]cid.Cid, correctInteres
 	precisionPerPeer := make([]float64, 0, len(correctInterests))
 	recallPerPeer := make([]float64, 0, len(correctInterests))
 	for p, correctCid := range correctInterests {
-		correct := 0.
+		r := 0.
 		if classification[p] == correctCid {
-			correct = 1.
+			r = 1.
 		}
-		r := correct
 
 		cidCount := 0.
-		for _, k := range classification {
+		correct := 0.
+		for peer, k := range classification {
 			if k == correctCid {
 				cidCount += 1
+				// Get the number of times this cid was correctly classified
+				if k == correctInterests[peer] {
+					correct += 1
+				}
 			}
 		}
-
 		d := 0.
 		if cidCount > 0 {
 			d = correct / cidCount
 		}
+
 		precisionPerPeer = append(precisionPerPeer, d)
 		recallPerPeer = append(recallPerPeer, r)
 	}
